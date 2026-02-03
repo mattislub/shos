@@ -1,8 +1,8 @@
 # Shos
 
-סקיצה התחלתית לאתר מכירה עם React ושרת Node, כולל סקריפט לאתחול מסד הנתונים.
+Initial sketch for a sales site with React and a Node server, including a database bootstrap script.
 
-## איך מריצים
+## How to run
 
 ```bash
 cd server
@@ -12,7 +12,7 @@ npm run db:init
 npm run dev
 ```
 
-בטרמינל נוסף:
+In another terminal:
 
 ```bash
 cd client
@@ -20,8 +20,8 @@ npm install
 npm run dev
 ```
 
-## מבנה
+## Structure
 
 - `server/` Express API + PostgreSQL.
-- `client/` אפליקציית React (Vite).
-- `server/db/init.js` מאתחל את סכמת ה-DB ומזריע נתונים ראשוניים.
+- `client/` React app (Vite).
+- `server/db/init.js` initializes the DB schema and seeds starter data.
