@@ -1,9 +1,17 @@
-const path = require("path");
-const Database = require("better-sqlite3");
+const { Pool } = require("pg");
 
-const dbPath = process.env.DB_PATH || path.join(__dirname, "..", "db", "shos.sqlite");
-const db = new Database(dbPath);
+const connectionString = process.env.DATABASE_URL;
 
-db.pragma("foreign_keys = ON");
+const pool = new Pool(
+  connectionString
+    ? { connectionString }
+    : {
+        host: process.env.PGHOST || "localhost",
+        port: process.env.PGPORT ? Number(process.env.PGPORT) : 5432,
+        user: process.env.PGUSER || "postgres",
+        password: process.env.PGPASSWORD || "",
+        database: process.env.PGDATABASE || "shos",
+      }
+);
 
-module.exports = db;
+module.exports = pool;
