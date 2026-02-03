@@ -11,19 +11,33 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-app.get("/api/product", (req, res) => {
-  const product = db.prepare("SELECT * FROM products WHERE active = 1 LIMIT 1").get();
-  if (!product) {
-    return res.status(404).json({ message: "No active product found" });
+app.get("/api/product", async (req, res) => {
+  try {
+    const productResult = await db.query(
+      "SELECT * FROM products WHERE active = true LIMIT 1"
+    );
+    const product = productResult.rows[0];
+
+    if (!product) {
+      return res.status(404).json({ message: "No active product found" });
+    }
+
+    const variantsResult = await db.query(
+      "SELECT * FROM variants WHERE product_id = $1 ORDER BY id",
+      [product.id]
+    );
+
+    const settingsResult = await db.query("SELECT * FROM settings LIMIT 1");
+
+    return res.json({
+      product,
+      variants: variantsResult.rows,
+      settings: settingsResult.rows[0] || null,
+    });
+  } catch (error) {
+    console.error("Failed to fetch product data", error);
+    return res.status(500).json({ message: "Failed to load product data" });
   }
-
-  const variants = db
-    .prepare("SELECT * FROM variants WHERE product_id = ? ORDER BY id")
-    .all(product.id);
-
-  const settings = db.prepare("SELECT * FROM settings LIMIT 1").get();
-
-  return res.json({ product, variants, settings });
 });
 
 app.get("/api/health", (req, res) => {
