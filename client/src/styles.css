@@ -1,0 +1,142 @@
+:root {
+  font-family: "Rubik", "Heebo", system-ui, sans-serif;
+  color: #14171f;
+  background-color: #f5f7fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 12px;
+  color: #7b7f8c;
+}
+
+.subtitle {
+  max-width: 480px;
+  font-size: 18px;
+  color: #555c6d;
+}
+
+.price-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 18px 40px rgba(25, 30, 52, 0.08);
+  min-width: 240px;
+}
+
+.label {
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: #6c7280;
+}
+
+.price {
+  font-size: 32px;
+  margin: 8px 0 0;
+}
+
+.muted {
+  color: #7d8494;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px rgba(20, 26, 51, 0.06);
+}
+
+.variant-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.variant {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid #e6e9f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: #f9fafc;
+  cursor: pointer;
+  transition: border 0.2s ease, background 0.2s ease;
+}
+
+.variant.active {
+  border-color: #2f6fed;
+  background: #eef3ff;
+}
+
+.variant:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.color {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #d7dae3;
+}
+
+.stock {
+  font-size: 12px;
+  color: #6e7486;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.total {
+  font-size: 28px;
+  margin: 8px 0 0;
+}
+
+.cta {
+  border: none;
+  background: #111827;
+  color: #fff;
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.cta:disabled {
+  background: #9aa0b2;
+  cursor: not-allowed;
+}
