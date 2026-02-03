@@ -1,0 +1,153 @@
+1) Scope & מטרות
+
+לבנות אתר מכירה למוצר יחיד (דגם נעל אחד) עם וריאציות צבע.
+
+חובה: רכישה אונליין, סליקה, מלאי לפי צבע, דמי משלוח קבועים, ניהול הזמנות, מיילים ללקוח.
+
+לא חובה (Phase 2): קופונים, חשבון משתמש, חוות דעת, חיבור חברת שילוח, שפות.
+
+2) UI/Pages (מסכים + התנהגויות)
+
+Pages:
+
+/ Home – הצגת מוצר, יתרונות, CTA “לקנייה”.
+
+/product דף מוצר – בחירת צבע, מחיר, זמינות, גלריה, כפתור Add to Cart.
+
+/cart עגלה – פירוט פריטים, כמות, מחיר, שורת משלוח קבועה, סה״כ.
+
+/checkout תשלום – פרטים + כתובת + תשלום.
+
+/order/success תודה – מספר הזמנה + סיכום.
+
+/policy/shipping, /policy/returns, /policy/privacy, /terms, /contact.
+
+UX Rules:
+
+אם מלאי לצבע = 0 ⇒ הצבע מוצג “אזל”, לא ניתן להוסיף לעגלה.
+
+שינוי צבע ⇒ מחליף תמונות, SKU, מלאי, מחיר אם יש.
+
+Checkout מציג תמיד: subtotal + shippingFlatFee + total.
+
+3) Data Model (DB) + חוקים
+
+Entities:
+
+products (יהיה רשומה אחת)
+
+id, title, description, base_price, active
+
+variants (צבעים)
+
+id, product_id, color_name, color_hex(optional), sku, price_override(optional), stock_qty, images[]
+
+orders
+
+id, order_number, status(new/paid/processing/shipped/canceled/refunded)
+
+customer_name, email, phone
+
+ship_address1, ship_city, ship_zip, ship_country
+
+subtotal, shipping_fee, total, currency
+
+payment_provider, payment_intent_id/transaction_id
+
+created_at, updated_at
+
+order_items
+
+id, order_id, variant_id, sku, color_name, qty, unit_price, line_total
+
+settings
+
+shipping_flat_fee, currency, support_email
+
+Business Rules:
+
+ביצירת הזמנה “Paid”: להוריד מלאי מה־variants.stock_qty בצורה אטומית.
+
+אם אין מלאי מספיק ⇒ עצירת תשלום/הזמנה עם הודעה.
+
+שינוי סטטוס הזמנה מתועד (אפשר log בשלב מתקדם).
+
+4) APIs + Payment Flow
+
+Public APIs (Client → Server):
+
+GET /api/product ⇒ מוצר + וריאציות + מלאי.
+
+POST /api/cart/validate ⇒ בדיקת מלאי לפני מעבר ל־Checkout.
+
+POST /api/checkout/create ⇒ יוצר Payment + Order “pending”.
+
+POST /api/payment/webhook ⇒ אימות סליקה, מעבר Order ל־“paid”, הורדת מלאי.
+
+GET /api/order/:orderNumber ⇒ סיכום הזמנה ללקוח (ללא מידע רגיש).
+
+Admin APIs:
+
+POST /api/admin/login
+
+GET /api/admin/orders?status=...
+
+PATCH /api/admin/orders/:id ⇒ עדכון סטטוס
+
+PATCH /api/admin/variants/:id ⇒ עדכון מלאי/מחיר/תמונה
+
+PATCH /api/admin/settings ⇒ משלוח קבוע/מטבע/מייל תמיכה
+
+Payment Requirements:
+
+שימוש ב־Webhook חובה (לא לסמוך על “success page”).
+
+שמירת מזהה עסקה/intent.
+
+טיפול בכשל תשלום: order נשאר pending / canceled.
+
+5) Admin, אבטחה, בדיקות, דיפלוי
+
+Admin Panel:
+
+דף התחברות.
+
+טבלת הזמנות + חיפוש לפי order_number/email.
+
+מסך עריכת וריאציות: צבע, SKU, מלאי, תמונות.
+
+מסך הגדרות: shipping_flat_fee.
+
+Security:
+
+JWT/Session לאדמין.
+
+Rate limit ל־login + webhook validation (signature check).
+
+Validation לכל input (email/phone/address).
+
+Testing Checklist:
+
+קנייה של צבע עם מלאי 1 ⇒ אחרי תשלום מלאי יורד ל־0 והצבע נחסם.
+
+ניסיון לקנות צבע אזל ⇒ חסימה ב־UI וגם בשרת.
+
+shipping_flat_fee מתווסף תמיד ויוצג בכל סיכום.
+
+Webhook משנה סטטוס ל־paid רק אחרי אימות חתימה.
+
+Deploy:
+
+ENV: PAYMENT_KEY, WEBHOOK_SECRET, DB_URL, SHIPPING_FEE, BASE_URL.
+
+לוגים + גיבוי DB.
+
+SSL + דומיין.
+
+אם את רוצה, אני יכול להפוך את זה לגרסה עוד יותר “קודקסית” עם:
+
+Acceptance Criteria לכל מסך,
+
+רשימת Tasks לפי Sprint,
+
+ו־ERD קצר (טבלאות וקשרים).
