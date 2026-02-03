@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const formatPrice = (value, currency = "ILS") =>
-  new Intl.NumberFormat("he-IL", {
+  new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
     maximumFractionDigits: 0
@@ -41,7 +41,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="page">
-        <p>טוען נתוני מוצר...</p>
+        <p>Loading product data...</p>
       </div>
     );
   }
@@ -49,7 +49,7 @@ export default function App() {
   if (!data) {
     return (
       <div className="page">
-        <p>לא ניתן לטעון את המוצר כרגע.</p>
+        <p>Unable to load the product right now.</p>
       </div>
     );
   }
@@ -64,19 +64,19 @@ export default function App() {
     <div className="page">
       <header className="hero">
         <div>
-          <p className="eyebrow">דגם חדש</p>
+          <p className="eyebrow">New model</p>
           <h1>{product.title}</h1>
           <p className="subtitle">{product.description}</p>
         </div>
         <div className="price-card">
-          <p className="label">מחיר נוכחי</p>
+          <p className="label">Current price</p>
           <p className="price">{formatPrice(price, currency)}</p>
-          <p className="muted">דמי משלוח: {formatPrice(shippingFee, currency)}</p>
+          <p className="muted">Shipping fee: {formatPrice(shippingFee, currency)}</p>
         </div>
       </header>
 
       <section className="panel">
-        <h2>בחר צבע</h2>
+        <h2>Select a color</h2>
         <div className="variant-grid">
           {variants.map((variant) => {
             const isOut = variant.stock_qty === 0;
@@ -91,7 +91,9 @@ export default function App() {
               >
                 <span className="color" style={{ backgroundColor: variant.color_hex }} />
                 <span>{variant.color_name}</span>
-                <span className="stock">{isOut ? "אזל" : `מלאי: ${variant.stock_qty}`}</span>
+                <span className="stock">
+                  {isOut ? "Out of stock" : `Stock: ${variant.stock_qty}`}
+                </span>
               </button>
             );
           })}
@@ -101,11 +103,11 @@ export default function App() {
       <section className="panel">
         <div className="summary">
           <div>
-            <p className="label">סה"כ לתשלום</p>
+            <p className="label">Total due</p>
             <p className="total">{formatPrice(total, currency)}</p>
           </div>
           <button className="cta" type="button" disabled={selectedVariant?.stock_qty === 0}>
-            המשך לרכישה
+            Continue to purchase
           </button>
         </div>
       </section>

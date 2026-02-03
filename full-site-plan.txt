@@ -1,0 +1,153 @@
+1) Scope & Goals
+
+Build a sales site for a single product (one shoe model) with color variants.
+
+Required: online purchase, payment processing, inventory by color, flat shipping fee, order management, customer emails.
+
+Optional (Phase 2): coupons, user accounts, reviews, shipping carrier integration, languages.
+
+2) UI/Pages (screens + behaviors)
+
+Pages:
+
+/ Home – product highlight, benefits, CTA "Buy now".
+
+/product product page – choose color, price, availability, gallery, Add to Cart button.
+
+/cart cart – item breakdown, quantity, price, flat shipping line item, total.
+
+/checkout checkout – details + address + payment.
+
+/order/success thank you – order number + summary.
+
+/policy/shipping, /policy/returns, /policy/privacy, /terms, /contact.
+
+UX Rules:
+
+If stock for a color = 0 ⇒ color shows as "Out of stock", cannot add to cart.
+
+Color change ⇒ updates images, SKU, stock, price if applicable.
+
+Checkout always shows: subtotal + shippingFlatFee + total.
+
+3) Data Model (DB) + rules
+
+Entities:
+
+products (single record)
+
+id, title, description, base_price, active
+
+variants (colors)
+
+id, product_id, color_name, color_hex(optional), sku, price_override(optional), stock_qty, images[]
+
+orders
+
+id, order_number, status(new/paid/processing/shipped/canceled/refunded)
+
+customer_name, email, phone
+
+ship_address1, ship_city, ship_zip, ship_country
+
+subtotal, shipping_fee, total, currency
+
+payment_provider, payment_intent_id/transaction_id
+
+created_at, updated_at
+
+order_items
+
+id, order_id, variant_id, sku, color_name, qty, unit_price, line_total
+
+settings
+
+shipping_flat_fee, currency, support_email
+
+Business Rules:
+
+When creating a "Paid" order: decrement variants.stock_qty atomically.
+
+If insufficient stock ⇒ stop payment/order with a message.
+
+Order status changes are recorded (logging can be added later).
+
+4) APIs + Payment Flow
+
+Public APIs (Client → Server):
+
+GET /api/product ⇒ product + variants + stock.
+
+POST /api/cart/validate ⇒ stock check before checkout.
+
+POST /api/checkout/create ⇒ creates Payment + Order "pending".
+
+POST /api/payment/webhook ⇒ payment verification, move Order to "paid", decrement stock.
+
+GET /api/order/:orderNumber ⇒ order summary for customer (no sensitive info).
+
+Admin APIs:
+
+POST /api/admin/login
+
+GET /api/admin/orders?status=...
+
+PATCH /api/admin/orders/:id ⇒ update status
+
+PATCH /api/admin/variants/:id ⇒ update stock/price/image
+
+PATCH /api/admin/settings ⇒ shipping flat fee/currency/support email
+
+Payment Requirements:
+
+Webhook usage is mandatory (do not trust the success page).
+
+Store transaction/intent ID.
+
+Handle payment failures: order stays pending / canceled.
+
+5) Admin, Security, Testing, Deployment
+
+Admin Panel:
+
+Login screen.
+
+Orders table + search by order_number/email.
+
+Variant editing screen: color, SKU, stock, images.
+
+Settings screen: shipping_flat_fee.
+
+Security:
+
+JWT/Session for admin.
+
+Rate limit for login + webhook validation (signature check).
+
+Validation for all input (email/phone/address).
+
+Testing Checklist:
+
+Buying a color with stock 1 ⇒ after payment stock drops to 0 and the color is blocked.
+
+Attempting to buy an out-of-stock color ⇒ blocked in UI and server.
+
+shipping_flat_fee is always added and shown in every summary.
+
+Webhook changes status to paid only after signature verification.
+
+Deploy:
+
+ENV: PAYMENT_KEY, WEBHOOK_SECRET, DB_URL, SHIPPING_FEE, BASE_URL.
+
+Logs + DB backup.
+
+SSL + domain.
+
+If you want, I can turn this into an even more "codex-like" version with:
+
+Acceptance Criteria for each screen,
+
+Task list per sprint,
+
+and a short ERD (tables and relationships).
