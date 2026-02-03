@@ -16,7 +16,7 @@ const seedDatabase = async () => {
   if (count === 0) {
     const productResult = await db.query(
       "INSERT INTO products (title, description, base_price, active) VALUES ($1, $2, $3, true) RETURNING id",
-      ["Nova Runner", "נעל ריצה קלה עם וריאציות צבעים.", 49900]
+      ["Nova Runner", "Lightweight running shoe with color variants.", 49900]
     );
     const productId = productResult.rows[0].id;
 
@@ -24,7 +24,7 @@ const seedDatabase = async () => {
       "INSERT INTO variants (product_id, color_name, color_hex, sku, price_override, stock_qty, images) VALUES ($1, $2, $3, $4, $5, $6, $7)",
       [
         productId,
-        "לבן",
+        "White",
         "#FFFFFF",
         "NR-WHITE",
         null,
@@ -37,7 +37,7 @@ const seedDatabase = async () => {
       "INSERT INTO variants (product_id, color_name, color_hex, sku, price_override, stock_qty, images) VALUES ($1, $2, $3, $4, $5, $6, $7)",
       [
         productId,
-        "שחור",
+        "Black",
         "#111111",
         "NR-BLACK",
         null,
@@ -50,7 +50,7 @@ const seedDatabase = async () => {
       "INSERT INTO variants (product_id, color_name, color_hex, sku, price_override, stock_qty, images) VALUES ($1, $2, $3, $4, $5, $6, $7)",
       [
         productId,
-        "אדום",
+        "Red",
         "#D32F2F",
         "NR-RED",
         52900,
