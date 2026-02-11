@@ -29,9 +29,23 @@ app.get("/api/product", async (req, res) => {
 
     const settingsResult = await db.query("SELECT * FROM settings LIMIT 1");
 
+    const variants = variantsResult.rows.map((variant) => {
+      let images = [];
+      try {
+        images = variant.images ? JSON.parse(variant.images) : [];
+      } catch (error) {
+        images = [];
+      }
+
+      return {
+        ...variant,
+        images: Array.isArray(images) ? images : [],
+      };
+    });
+
     return res.json({
       product,
-      variants: variantsResult.rows,
+      variants,
       settings: settingsResult.rows[0] || null,
     });
   } catch (error) {

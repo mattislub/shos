@@ -78,6 +78,20 @@ body {
   box-shadow: 0 10px 25px rgba(20, 26, 51, 0.06);
 }
 
+.product-image-wrap {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.product-image {
+  width: min(100%, 480px);
+  border-radius: 14px;
+  border: 1px solid #e6e9f0;
+  box-shadow: 0 10px 25px rgba(20, 26, 51, 0.08);
+  object-fit: cover;
+}
+
 .variant-grid {
   display: grid;
   gap: 12px;

@@ -20,44 +20,71 @@ const seedDatabase = async () => {
     );
     const productId = productResult.rows[0].id;
 
-    await db.query(
-      "INSERT INTO variants (product_id, color_name, color_hex, sku, price_override, stock_qty, images) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-      [
-        productId,
-        "White",
-        "#FFFFFF",
-        "NR-WHITE",
-        null,
-        12,
-        JSON.stringify(["/images/white-1.jpg", "/images/white-2.jpg"]),
-      ]
-    );
+    const variants = [
+      {
+        colorName: "Beige",
+        colorHex: "#D8C3A5",
+        sku: "LF-BEIGE",
+        priceOverride: null,
+        stockQty: 10,
+        images: ["/images/loafer_beige_2.jpg"],
+      },
+      {
+        colorName: "Black",
+        colorHex: "#111111",
+        sku: "LF-BLACK",
+        priceOverride: null,
+        stockQty: 8,
+        images: ["/images/loafer_black_2.jpg"],
+      },
+      {
+        colorName: "Blue",
+        colorHex: "#3B5AA3",
+        sku: "LF-BLUE",
+        priceOverride: null,
+        stockQty: 7,
+        images: ["/images/loafer_blue_2.jpg"],
+      },
+      {
+        colorName: "Olive",
+        colorHex: "#6B7B3A",
+        sku: "LF-OLIVE",
+        priceOverride: null,
+        stockQty: 6,
+        images: ["/images/loafer_olive_2.jpg"],
+      },
+      {
+        colorName: "Pink",
+        colorHex: "#E39AB1",
+        sku: "LF-PINK",
+        priceOverride: 52900,
+        stockQty: 5,
+        images: ["/images/loafer_pink_2.jpg"],
+      },
+      {
+        colorName: "White",
+        colorHex: "#F5F5F5",
+        sku: "LF-WHITE",
+        priceOverride: null,
+        stockQty: 12,
+        images: ["/images/loafer_white_2.jpg"],
+      },
+    ];
 
-    await db.query(
-      "INSERT INTO variants (product_id, color_name, color_hex, sku, price_override, stock_qty, images) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-      [
-        productId,
-        "Black",
-        "#111111",
-        "NR-BLACK",
-        null,
-        8,
-        JSON.stringify(["/images/black-1.jpg", "/images/black-2.jpg"]),
-      ]
-    );
-
-    await db.query(
-      "INSERT INTO variants (product_id, color_name, color_hex, sku, price_override, stock_qty, images) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-      [
-        productId,
-        "Red",
-        "#D32F2F",
-        "NR-RED",
-        52900,
-        5,
-        JSON.stringify(["/images/red-1.jpg", "/images/red-2.jpg"]),
-      ]
-    );
+    for (const variant of variants) {
+      await db.query(
+        "INSERT INTO variants (product_id, color_name, color_hex, sku, price_override, stock_qty, images) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [
+          productId,
+          variant.colorName,
+          variant.colorHex,
+          variant.sku,
+          variant.priceOverride,
+          variant.stockQty,
+          JSON.stringify(variant.images),
+        ]
+      );
+    }
 
     await db.query(
       "INSERT INTO settings (shipping_flat_fee, currency, support_email) VALUES ($1, $2, $3)",

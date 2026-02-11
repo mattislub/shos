@@ -59,6 +59,7 @@ export default function App() {
   const currency = settings?.currency ?? "ILS";
   const price = selectedVariant ? resolvePrice(selectedVariant, product.base_price) : 0;
   const total = price + shippingFee;
+  const selectedImage = selectedVariant?.images?.[0] ?? null;
 
   return (
     <div className="page">
@@ -76,6 +77,16 @@ export default function App() {
       </header>
 
       <section className="panel">
+        {selectedImage ? (
+          <div className="product-image-wrap">
+            <img
+              className="product-image"
+              src={selectedImage}
+              alt={`${product.title} in ${selectedVariant.color_name}`}
+            />
+          </div>
+        ) : null}
+
         <h2>Select a color</h2>
         <div className="variant-grid">
           {variants.map((variant) => {
