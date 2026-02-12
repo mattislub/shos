@@ -330,9 +330,14 @@ function ColorImagesPage() {
 }
 
 function StorePage() {
+  const sizeOptions = ["XS", "S", "M", "L", "XL"];
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
+  const [step, setStep] = useState("color");
+  const [sizeQuantities, setSizeQuantities] = useState(() =>
+    sizeOptions.reduce((acc, size) => ({ ...acc, [size]: 0 }), {})
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -358,6 +363,16 @@ function StorePage() {
     return data.variants.find((variant) => variant.id === selectedVariantId);
   }, [data, selectedVariantId]);
 
+  const selectedSizes = useMemo(
+    () => Object.entries(sizeQuantities).filter(([, quantity]) => quantity > 0),
+    [sizeQuantities]
+  );
+
+  const selectedItemsCount = useMemo(
+    () => selectedSizes.reduce((sum, [, quantity]) => sum + quantity, 0),
+    [selectedSizes]
+  );
+
   if (loading) {
     return (
       <div className="page">
@@ -378,8 +393,16 @@ function StorePage() {
   const shippingFee = settings?.shipping_flat_fee ?? 0;
   const currency = settings?.currency ?? "ILS";
   const price = selectedVariant ? resolvePrice(selectedVariant, product.base_price) : 0;
-  const total = price + shippingFee;
+  const subtotal = price * Math.max(selectedItemsCount, 1);
+  const total = subtotal + shippingFee;
   const selectedImage = selectedVariant?.images?.[0] ?? null;
+
+  const updateSizeQuantity = (size, quantity) => {
+    setSizeQuantities((prev) => ({
+      ...prev,
+      [size]: Math.max(0, quantity),
+    }));
+  };
 
   return (
     <div className="page">
@@ -396,48 +419,118 @@ function StorePage() {
         </div>
       </header>
 
-      <section className="panel">
-        <div className="product-image-wrap">
-          {selectedImage ? (
-            <img
-              className="product-image"
-              src={selectedImage}
-              alt={`${product.title} in ${selectedVariant.color_name}`}
-            />
-          ) : (
-            <div className="image-placeholder">לא נוספה תמונה לצבע הזה עדיין</div>
-          )}
-        </div>
+      {step === "color" ? (
+        <section className="panel">
+          <div className="product-image-wrap">
+            {selectedImage ? (
+              <img
+                className="product-image"
+                src={selectedImage}
+                alt={`${product.title} in ${selectedVariant.color_name}`}
+              />
+            ) : (
+              <div className="image-placeholder">לא נוספה תמונה לצבע הזה עדיין</div>
+            )}
+          </div>
 
-        <h2>Select a color</h2>
-        <div className="variant-grid">
-          {variants.map((variant) => {
-            const isOut = variant.stock_qty === 0;
-            const isSelected = variant.id === selectedVariantId;
-            return (
-              <button
-                key={variant.id}
-                className={`variant ${isSelected ? "active" : ""}`}
-                type="button"
-                onClick={() => setSelectedVariantId(variant.id)}
-                disabled={isOut}
-              >
-                <span className="color" style={{ backgroundColor: variant.color_hex }} />
-                <span>{variant.color_name}</span>
-                <span className="stock">
-                  {isOut ? "Out of stock" : `Stock: ${variant.stock_qty}`}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+          <h2>Select a color</h2>
+          <div className="variant-grid">
+            {variants.map((variant) => {
+              const isOut = variant.stock_qty === 0;
+              const isSelected = variant.id === selectedVariantId;
+              return (
+                <button
+                  key={variant.id}
+                  className={`variant ${isSelected ? "active" : ""}`}
+                  type="button"
+                  onClick={() => setSelectedVariantId(variant.id)}
+                  disabled={isOut}
+                >
+                  <span className="color" style={{ backgroundColor: variant.color_hex }} />
+                  <span>{variant.color_name}</span>
+                  <span className="stock">
+                    {isOut ? "Out of stock" : `Stock: ${variant.stock_qty}`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="step-actions">
+            <button
+              className="cta"
+              type="button"
+              onClick={() => setStep("size")}
+              disabled={!selectedVariant || selectedVariant.stock_qty === 0}
+            >
+              המשך לבחירת מידה
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="panel">
+          <div className="sizes-header">
+            <div>
+              <p className="label">צבע שנבחר</p>
+              <h2>{selectedVariant?.color_name}</h2>
+            </div>
+            <button className="secondary-link" type="button" onClick={() => setStep("color")}>
+              חזרה לבחירת צבע
+            </button>
+          </div>
+
+          <p className="muted">אפשר לבחור כמה מידות שונות או להגדיל כמות במידה אחת.</p>
+
+          <div className="sizes-grid">
+            {sizeOptions.map((size) => {
+              const quantity = sizeQuantities[size] ?? 0;
+              return (
+                <article key={size} className={`size-card ${quantity > 0 ? "active" : ""}`}>
+                  <p className="size-title">מידה {size}</p>
+                  <div className="size-controls">
+                    <button type="button" onClick={() => updateSizeQuantity(size, quantity - 1)}>
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min={0}
+                      value={quantity}
+                      onChange={(event) =>
+                        updateSizeQuantity(size, Number(event.target.value) || 0)
+                      }
+                    />
+                    <button type="button" onClick={() => updateSizeQuantity(size, quantity + 1)}>
+                      +
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="selected-sizes">
+            <p className="label">מידות שנבחרו</p>
+            {selectedSizes.length ? (
+              <ul>
+                {selectedSizes.map(([size, quantity]) => (
+                  <li key={size}>
+                    {size} × {quantity}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted">לא נבחרו מידות עדיין.</p>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="panel">
         <div className="summary">
           <div>
             <p className="label">Total due</p>
             <p className="total">{formatPrice(total, currency)}</p>
+            <p className="muted">כמות פריטים: {Math.max(selectedItemsCount, 1)}</p>
           </div>
           <div className="actions-row">
             <a className="secondary-link" href="/color-images">
