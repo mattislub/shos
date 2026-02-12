@@ -353,3 +353,34 @@ body {
   margin: 10px 0 0;
   padding-inline-start: 18px;
 }
+
+
+.product-edit-toggle {
+  margin-top: 12px;
+}
+
+.product-edit-form {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+}
+
+.product-edit-form input,
+.product-edit-form textarea {
+  width: 100%;
+  border: 1px solid #d4dbe8;
+  border-radius: 8px;
+  padding: 10px;
+  font-family: inherit;
+}
+
+.product-edit-form textarea {
+  resize: vertical;
+}
+
+.product-edit-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}

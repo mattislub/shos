@@ -338,6 +338,17 @@ function StorePage() {
   const [sizeQuantities, setSizeQuantities] = useState(() =>
     sizeOptions.reduce((acc, size) => ({ ...acc, [size]: 0 }), {})
   );
+  const [isEditingProduct, setIsEditingProduct] = useState(false);
+  const [productDraft, setProductDraft] = useState({
+    title: "",
+    description: "",
+    base_price: "",
+  });
+  const [productSaveState, setProductSaveState] = useState({
+    loading: false,
+    message: "",
+    error: "",
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -345,6 +356,11 @@ function StorePage() {
         const response = await fetch("/api/product");
         const json = await response.json();
         setData(json);
+        setProductDraft({
+          title: json?.product?.title ?? "",
+          description: json?.product?.description ?? "",
+          base_price: String(json?.product?.base_price ?? ""),
+        });
         if (json?.variants?.length) {
           setSelectedVariantId(json.variants[0].id);
         }
@@ -404,18 +420,154 @@ function StorePage() {
     }));
   };
 
+  const startEditingProduct = () => {
+    setProductSaveState({ loading: false, message: "", error: "" });
+    setProductDraft({
+      title: product.title,
+      description: product.description,
+      base_price: String(product.base_price),
+    });
+    setIsEditingProduct(true);
+  };
+
+  const cancelEditingProduct = () => {
+    setIsEditingProduct(false);
+    setProductSaveState({ loading: false, message: "", error: "" });
+    setProductDraft({
+      title: product.title,
+      description: product.description,
+      base_price: String(product.base_price),
+    });
+  };
+
+  const saveProduct = async () => {
+    const basePrice = Number(productDraft.base_price);
+
+    if (!productDraft.title.trim() || !productDraft.description.trim()) {
+      setProductSaveState({
+        loading: false,
+        message: "",
+        error: "כותרת ותיאור הם שדות חובה.",
+      });
+      return;
+    }
+
+    if (!Number.isInteger(basePrice) || basePrice < 0) {
+      setProductSaveState({
+        loading: false,
+        message: "",
+        error: "מחיר בסיס חייב להיות מספר שלם לא שלילי (באגורות).",
+      });
+      return;
+    }
+
+    try {
+      setProductSaveState({ loading: true, message: "", error: "" });
+      const response = await fetch(`/api/product/${product.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: productDraft.title,
+          description: productDraft.description,
+          base_price: basePrice,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update product");
+      }
+
+      const json = await response.json();
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              product: json.product,
+            }
+          : prev
+      );
+      setProductDraft({
+        title: json.product.title,
+        description: json.product.description,
+        base_price: String(json.product.base_price),
+      });
+      setIsEditingProduct(false);
+      setProductSaveState({ loading: false, message: "המוצר נשמר בהצלחה.", error: "" });
+    } catch (error) {
+      console.error(error);
+      setProductSaveState({
+        loading: false,
+        message: "",
+        error: "שמירת פרטי המוצר נכשלה. נסו שוב.",
+      });
+    }
+  };
+
   return (
     <div className="page">
       <header className="hero">
         <div>
           <p className="eyebrow">New model</p>
-          <h1>{product.title}</h1>
-          <p className="subtitle">{product.description}</p>
+          {isEditingProduct ? (
+            <div className="product-edit-form">
+              <input
+                type="text"
+                value={productDraft.title}
+                onChange={(event) =>
+                  setProductDraft((prev) => ({ ...prev, title: event.target.value }))
+                }
+                placeholder="שם מוצר"
+              />
+              <textarea
+                rows={3}
+                value={productDraft.description}
+                onChange={(event) =>
+                  setProductDraft((prev) => ({ ...prev, description: event.target.value }))
+                }
+                placeholder="תיאור מוצר"
+              />
+              <input
+                type="number"
+                min={0}
+                step={100}
+                value={productDraft.base_price}
+                onChange={(event) =>
+                  setProductDraft((prev) => ({ ...prev, base_price: event.target.value }))
+                }
+                placeholder="מחיר בסיס באגורות"
+              />
+              <div className="product-edit-actions">
+                <button
+                  className="cta"
+                  type="button"
+                  onClick={saveProduct}
+                  disabled={productSaveState.loading}
+                >
+                  {productSaveState.loading ? "שומר..." : "שמור מוצר"}
+                </button>
+                <button className="secondary-link" type="button" onClick={cancelEditingProduct}>
+                  ביטול
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h1>{product.title}</h1>
+              <p className="subtitle">{product.description}</p>
+            </>
+          )}
+          {productSaveState.error ? <p className="error-text">{productSaveState.error}</p> : null}
+          {productSaveState.message ? <p className="saved-text">{productSaveState.message}</p> : null}
         </div>
         <div className="price-card">
           <p className="label">Current price</p>
           <p className="price">{formatPrice(price, currency)}</p>
           <p className="muted">Shipping fee: {formatPrice(shippingFee, currency)}</p>
+          {!isEditingProduct ? (
+            <button className="secondary-link product-edit-toggle" type="button" onClick={startEditingProduct}>
+              עריכת מוצר
+            </button>
+          ) : null}
         </div>
       </header>
 

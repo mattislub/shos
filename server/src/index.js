@@ -173,6 +173,45 @@ app.post("/api/variants", async (req, res) => {
   }
 });
 
+app.put("/api/product/:id", async (req, res) => {
+  const productId = Number(req.params.id);
+  const { title, description, base_price } = req.body || {};
+
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return res.status(400).json({ message: "Invalid product id" });
+  }
+
+  if (!title || !description) {
+    return res.status(400).json({ message: "title and description are required" });
+  }
+
+  const basePrice = Number(base_price);
+  if (!Number.isInteger(basePrice) || basePrice < 0) {
+    return res.status(400).json({ message: "base_price must be a non-negative integer" });
+  }
+
+  try {
+    const result = await db.query(
+      `UPDATE products
+       SET title = $1,
+           description = $2,
+           base_price = $3
+       WHERE id = $4
+       RETURNING id, title, description, base_price, active`,
+      [String(title).trim(), String(description).trim(), basePrice, productId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    return res.json({ product: result.rows[0] });
+  } catch (error) {
+    console.error("Failed to update product", error);
+    return res.status(500).json({ message: "Failed to update product" });
+  }
+});
+
 app.put("/api/variants/:id/images", async (req, res) => {
   const variantId = Number(req.params.id);
   const inputImages = Array.isArray(req.body?.images) ? req.body.images : null;
