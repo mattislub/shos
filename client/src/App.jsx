@@ -438,6 +438,7 @@ function StorePage() {
             {variants.map((variant) => {
               const isOut = variant.stock_qty === 0;
               const isSelected = variant.id === selectedVariantId;
+              const variantImage = variant.images?.[0];
               return (
                 <button
                   key={variant.id}
@@ -446,8 +447,20 @@ function StorePage() {
                   onClick={() => setSelectedVariantId(variant.id)}
                   disabled={isOut}
                 >
+                  {variantImage ? (
+                    <img
+                      className="variant-image"
+                      src={variantImage}
+                      alt={`${product.title} בצבע ${variant.color_name}`}
+                    />
+                  ) : (
+                    <span className="variant-image-placeholder">אין תמונה</span>
+                  )}
                   <span className="color" style={{ backgroundColor: variant.color_hex }} />
                   <span>{variant.color_name}</span>
+                  <span className="variant-rating" aria-label="דירוג 5 מתוך 5 כוכבים">
+                    ★★★★★
+                  </span>
                   <span className="stock">
                     {isOut ? "Out of stock" : `Stock: ${variant.stock_qty}`}
                   </span>
