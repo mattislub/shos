@@ -256,3 +256,74 @@ body {
   gap: 10px;
   align-items: center;
 }
+
+.step-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sizes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sizes-header h2 {
+  margin-top: 8px;
+}
+
+.sizes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.size-card {
+  border: 1px solid #d4dbe8;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f9fafc;
+}
+
+.size-card.active {
+  border-color: #2f6fed;
+  background: #eef3ff;
+}
+
+.size-title {
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.size-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.size-controls button {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #d0d8e6;
+  background: #fff;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.size-controls input {
+  width: 100%;
+  border: 1px solid #d4dbe8;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+
+.selected-sizes ul {
+  margin: 10px 0 0;
+  padding-inline-start: 18px;
+}
