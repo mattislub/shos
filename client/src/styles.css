@@ -122,6 +122,26 @@ body {
   transition: border 0.2s ease, background 0.2s ease;
 }
 
+.variant-image,
+.variant-image-placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+}
+
+.variant-image {
+  border: 1px solid #dfe4ef;
+  object-fit: cover;
+}
+
+.variant-image-placeholder {
+  display: grid;
+  place-items: center;
+  background: #f1f5fd;
+  color: #6e7486;
+  font-size: 13px;
+}
+
 .variant.active {
   border-color: #2f6fed;
   background: #eef3ff;
@@ -142,6 +162,12 @@ body {
 .stock {
   font-size: 12px;
   color: #6e7486;
+}
+
+.variant-rating {
+  color: #f59e0b;
+  letter-spacing: 2px;
+  font-size: 14px;
 }
 
 .summary {
