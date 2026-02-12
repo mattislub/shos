@@ -92,6 +92,17 @@ body {
   object-fit: cover;
 }
 
+.image-placeholder {
+  width: min(100%, 480px);
+  min-height: 220px;
+  border-radius: 14px;
+  border: 1px dashed #d2d8e6;
+  display: grid;
+  place-items: center;
+  color: #657089;
+  background: #f9fbff;
+}
+
 .variant-grid {
   display: grid;
   gap: 12px;
@@ -159,4 +170,68 @@ body {
 .cta:disabled {
   background: #9aa0b2;
   cursor: not-allowed;
+}
+
+.secondary-link {
+  text-decoration: none;
+  border: 1px solid #d8deea;
+  color: #1e293b;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 500;
+  background: #ffffff;
+}
+
+.actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.image-manager-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.image-card {
+  border: 1px solid #e8ecf5;
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.image-card textarea {
+  width: 100%;
+  border: 1px solid #d4dbe8;
+  border-radius: 8px;
+  padding: 10px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.error-text {
+  color: #b42318;
+}
+
+.saved-text {
+  color: #067647;
+}
+
+.mini-preview-wrap {
+  min-height: 120px;
+  border: 1px dashed #d5dce9;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+}
+
+.mini-preview {
+  max-width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 6px;
 }
