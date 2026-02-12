@@ -18,23 +18,43 @@ function ColorImagesPage() {
   const [error, setError] = useState("");
   const [savingVariantId, setSavingVariantId] = useState(null);
   const [savedMessage, setSavedMessage] = useState("");
+  const [productImages, setProductImages] = useState([]);
+  const [newVariant, setNewVariant] = useState({
+    color_name: "",
+    color_hex: "#000000",
+    sku: "",
+    stock_qty: 0,
+    price_override: "",
+  });
 
   useEffect(() => {
     const load = async () => {
       try {
         setError("");
-        const response = await fetch("/api/variants");
-        if (!response.ok) {
+
+        const [variantsResponse, imagesResponse] = await Promise.all([
+          fetch("/api/variants"),
+          fetch("/api/product-images"),
+        ]);
+
+        if (!variantsResponse.ok) {
           throw new Error("Failed to load variants");
         }
-        const json = await response.json();
-        const mapped = (json.variants || []).map((variant) => ({
+
+        if (!imagesResponse.ok) {
+          throw new Error("Failed to load product images");
+        }
+
+        const variantsJson = await variantsResponse.json();
+        const imagesJson = await imagesResponse.json();
+
+        const mapped = (variantsJson.variants || []).map((variant) => ({
           ...variant,
-          draftImages: Array.isArray(variant.images)
-            ? variant.images.join("\n")
-            : "",
+          draftImages: Array.isArray(variant.images) ? variant.images.join("\n") : "",
         }));
+
         setVariants(mapped);
+        setProductImages(imagesJson.images || []);
       } catch (loadError) {
         console.error(loadError);
         setError("לא הצלחנו לטעון את רשימת הצבעים כרגע.");
@@ -55,6 +75,33 @@ function ColorImagesPage() {
     );
   };
 
+  const addImageToVariant = (variantId, imageUrl) => {
+    if (!imageUrl) return;
+
+    setSavedMessage("");
+    setVariants((prev) =>
+      prev.map((variant) => {
+        if (variant.id !== variantId) {
+          return variant;
+        }
+
+        const current = variant.draftImages
+          .split("\n")
+          .map((entry) => entry.trim())
+          .filter(Boolean);
+
+        if (current.includes(imageUrl)) {
+          return variant;
+        }
+
+        return {
+          ...variant,
+          draftImages: [...current, imageUrl].join("\n"),
+        };
+      })
+    );
+  };
+
   const saveImages = async (variant) => {
     const images = variant.draftImages
       .split("\n")
@@ -64,6 +111,8 @@ function ColorImagesPage() {
     try {
       setSavingVariantId(variant.id);
       setSavedMessage("");
+      setError("");
+
       const response = await fetch(`/api/variants/${variant.id}/images`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -94,18 +143,116 @@ function ColorImagesPage() {
     }
   };
 
+  const handleNewVariantChange = (field, value) => {
+    setNewVariant((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const createVariant = async () => {
+    try {
+      setSavedMessage("");
+      setError("");
+
+      const payload = {
+        color_name: newVariant.color_name,
+        color_hex: newVariant.color_hex,
+        sku: newVariant.sku,
+        stock_qty: Number(newVariant.stock_qty),
+        price_override:
+          newVariant.price_override === "" ? null : Number(newVariant.price_override),
+        images: [],
+      };
+
+      const response = await fetch("/api/variants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to create variant");
+      }
+
+      const data = await response.json();
+      const variant = data.variant;
+
+      setVariants((prev) => [
+        ...prev,
+        {
+          ...variant,
+          draftImages: Array.isArray(variant.images) ? variant.images.join("\n") : "",
+        },
+      ]);
+
+      setNewVariant({
+        color_name: "",
+        color_hex: "#000000",
+        sku: "",
+        stock_qty: 0,
+        price_override: "",
+      });
+
+      setSavedMessage("צבע חדש נוסף בהצלחה.");
+    } catch (createError) {
+      console.error(createError);
+      setError(`הוספת צבע נכשלה: ${createError.message}`);
+    }
+  };
+
   return (
     <div className="page">
       <header className="hero">
         <div>
           <p className="eyebrow">ניהול צבעים</p>
           <h1>העלאת תמונות לכל צבע</h1>
-          <p className="subtitle">הדביקו קישורים לתמונות (אחד בכל שורה) ושמרו לכל צבע.</p>
+          <p className="subtitle">ניתן לבחור תמונות מהמאגר וגם להדביק קישורים ידנית.</p>
         </div>
         <a className="secondary-link" href="/">
           חזרה לחנות
         </a>
       </header>
+
+      <section className="panel add-variant-panel">
+        <h2>הוספת צבע חדש</h2>
+        <div className="new-variant-form">
+          <input
+            type="text"
+            placeholder="שם צבע"
+            value={newVariant.color_name}
+            onChange={(event) => handleNewVariantChange("color_name", event.target.value)}
+          />
+          <input
+            type="color"
+            value={newVariant.color_hex}
+            onChange={(event) => handleNewVariantChange("color_hex", event.target.value)}
+            aria-label="בחירת צבע"
+          />
+          <input
+            type="text"
+            placeholder="SKU"
+            value={newVariant.sku}
+            onChange={(event) => handleNewVariantChange("sku", event.target.value)}
+          />
+          <input
+            type="number"
+            min={0}
+            placeholder="מלאי"
+            value={newVariant.stock_qty}
+            onChange={(event) => handleNewVariantChange("stock_qty", event.target.value)}
+          />
+          <input
+            type="number"
+            min={0}
+            step={100}
+            placeholder="מחיר מיוחד באגורות (אופציונלי)"
+            value={newVariant.price_override}
+            onChange={(event) => handleNewVariantChange("price_override", event.target.value)}
+          />
+          <button className="cta" type="button" onClick={createVariant}>
+            הוסף צבע
+          </button>
+        </div>
+      </section>
 
       {error ? <p className="error-text">{error}</p> : null}
       {savedMessage ? <p className="saved-text">{savedMessage}</p> : null}
@@ -127,6 +274,24 @@ function ColorImagesPage() {
                 <article key={variant.id} className="image-card">
                   <h3>{variant.color_name}</h3>
                   <p className="muted">{variant.sku}</p>
+
+                  <label className="field-label">בחר תמונה מהנתיב הקיים</label>
+                  <select
+                    className="image-select"
+                    defaultValue=""
+                    onChange={(event) => {
+                      addImageToVariant(variant.id, event.target.value);
+                      event.target.value = "";
+                    }}
+                  >
+                    <option value="">בחר תמונה...</option>
+                    {productImages.map((image) => (
+                      <option key={`${variant.id}-${image.url}`} value={image.url}>
+                        {image.name}
+                      </option>
+                    ))}
+                  </select>
+
                   <textarea
                     rows={4}
                     value={variant.draftImages}

@@ -203,12 +203,17 @@ body {
   gap: 10px;
 }
 
-.image-card textarea {
+.image-card textarea,
+.new-variant-form input,
+.image-select {
   width: 100%;
   border: 1px solid #d4dbe8;
   border-radius: 8px;
   padding: 10px;
   font-family: inherit;
+}
+
+.image-card textarea {
   resize: vertical;
 }
 
@@ -234,4 +239,20 @@ body {
   max-height: 120px;
   object-fit: cover;
   border-radius: 6px;
+}
+
+.field-label {
+  font-size: 13px;
+  color: #475467;
+}
+
+.add-variant-panel h2 {
+  margin-top: 0;
+}
+
+.new-variant-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  align-items: center;
 }
