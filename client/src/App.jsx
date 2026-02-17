@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const formatPrice = (value, currency = "ILS") =>
   new Intl.NumberFormat("en-US", {
@@ -330,25 +330,9 @@ function ColorImagesPage() {
 }
 
 function StorePage() {
-  const sizeOptions = ["XS", "S", "M", "L", "XL"];
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
-  const [step, setStep] = useState("color");
-  const [sizeQuantities, setSizeQuantities] = useState(() =>
-    sizeOptions.reduce((acc, size) => ({ ...acc, [size]: 0 }), {})
-  );
-  const [isEditingProduct, setIsEditingProduct] = useState(false);
-  const [productDraft, setProductDraft] = useState({
-    title: "",
-    description: "",
-    base_price: "",
-  });
-  const [productSaveState, setProductSaveState] = useState({
-    loading: false,
-    message: "",
-    error: "",
-  });
 
   useEffect(() => {
     const load = async () => {
@@ -356,11 +340,6 @@ function StorePage() {
         const response = await fetch("/api/product");
         const json = await response.json();
         setData(json);
-        setProductDraft({
-          title: json?.product?.title ?? "",
-          description: json?.product?.description ?? "",
-          base_price: String(json?.product?.base_price ?? ""),
-        });
         if (json?.variants?.length) {
           setSelectedVariantId(json.variants[0].id);
         }
@@ -374,20 +353,7 @@ function StorePage() {
     load();
   }, []);
 
-  const selectedVariant = useMemo(() => {
-    if (!data) return null;
-    return data.variants.find((variant) => variant.id === selectedVariantId);
-  }, [data, selectedVariantId]);
-
-  const selectedSizes = useMemo(
-    () => Object.entries(sizeQuantities).filter(([, quantity]) => quantity > 0),
-    [sizeQuantities]
-  );
-
-  const selectedItemsCount = useMemo(
-    () => selectedSizes.reduce((sum, [, quantity]) => sum + quantity, 0),
-    [selectedSizes]
-  );
+  const selectedVariant = data?.variants.find((variant) => variant.id === selectedVariantId);
 
   if (loading) {
     return (
@@ -406,305 +372,125 @@ function StorePage() {
   }
 
   const { product, variants, settings } = data;
-  const shippingFee = settings?.shipping_flat_fee ?? 0;
   const currency = settings?.currency ?? "ILS";
   const price = selectedVariant ? resolvePrice(selectedVariant, product.base_price) : 0;
-  const subtotal = price * Math.max(selectedItemsCount, 1);
-  const total = subtotal + shippingFee;
   const selectedImage = selectedVariant?.images?.[0] ?? null;
+  const benefitCards = [
+    { icon: "☁️", title: "All-day comfort", text: "Soft support that helps reduce pressure and fatigue." },
+    { icon: "🛡️", title: "Non-slip stability", text: "Confident traction for city streets and smooth floors." },
+    { icon: "🪶", title: "Lightweight & flexible", text: "Ultra-light feel with foldable flexibility for travel." },
+    { icon: "✨", title: "Any occasion ready", text: "Perfect for workdays, events, and quick weekend trips." },
+  ];
 
-  const updateSizeQuantity = (size, quantity) => {
-    setSizeQuantities((prev) => ({
-      ...prev,
-      [size]: Math.max(0, quantity),
-    }));
-  };
-
-  const startEditingProduct = () => {
-    setProductSaveState({ loading: false, message: "", error: "" });
-    setProductDraft({
-      title: product.title,
-      description: product.description,
-      base_price: String(product.base_price),
-    });
-    setIsEditingProduct(true);
-  };
-
-  const cancelEditingProduct = () => {
-    setIsEditingProduct(false);
-    setProductSaveState({ loading: false, message: "", error: "" });
-    setProductDraft({
-      title: product.title,
-      description: product.description,
-      base_price: String(product.base_price),
-    });
-  };
-
-  const saveProduct = async () => {
-    const basePrice = Number(productDraft.base_price);
-
-    if (!productDraft.title.trim() || !productDraft.description.trim()) {
-      setProductSaveState({
-        loading: false,
-        message: "",
-        error: "כותרת ותיאור הם שדות חובה.",
-      });
-      return;
-    }
-
-    if (!Number.isInteger(basePrice) || basePrice < 0) {
-      setProductSaveState({
-        loading: false,
-        message: "",
-        error: "מחיר בסיס חייב להיות מספר שלם לא שלילי (באגורות).",
-      });
-      return;
-    }
-
-    try {
-      setProductSaveState({ loading: true, message: "", error: "" });
-      const response = await fetch(`/api/product/${product.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: productDraft.title,
-          description: productDraft.description,
-          base_price: basePrice,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update product");
-      }
-
-      const json = await response.json();
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              product: json.product,
-            }
-          : prev
-      );
-      setProductDraft({
-        title: json.product.title,
-        description: json.product.description,
-        base_price: String(json.product.base_price),
-      });
-      setIsEditingProduct(false);
-      setProductSaveState({ loading: false, message: "המוצר נשמר בהצלחה.", error: "" });
-    } catch (error) {
-      console.error(error);
-      setProductSaveState({
-        loading: false,
-        message: "",
-        error: "שמירת פרטי המוצר נכשלה. נסו שוב.",
-      });
-    }
-  };
+  const specificationRows = [
+    ["Sole material", "Non-slip PVC"],
+    ["Outer material", "PVC"],
+    ["Closure type", "Pull-On (No laces)"],
+    ["Water resistance", "Water-resistant finish"],
+    ["Heel type", "Flat heel"],
+    ["Toe style", "Round toe"],
+  ];
 
   return (
     <div className="page">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">New model</p>
-          {isEditingProduct ? (
-            <div className="product-edit-form">
-              <input
-                type="text"
-                value={productDraft.title}
-                onChange={(event) =>
-                  setProductDraft((prev) => ({ ...prev, title: event.target.value }))
-                }
-                placeholder="שם מוצר"
-              />
-              <textarea
-                rows={3}
-                value={productDraft.description}
-                onChange={(event) =>
-                  setProductDraft((prev) => ({ ...prev, description: event.target.value }))
-                }
-                placeholder="תיאור מוצר"
-              />
-              <input
-                type="number"
-                min={0}
-                step={100}
-                value={productDraft.base_price}
-                onChange={(event) =>
-                  setProductDraft((prev) => ({ ...prev, base_price: event.target.value }))
-                }
-                placeholder="מחיר בסיס באגורות"
-              />
-              <div className="product-edit-actions">
-                <button
-                  className="cta"
-                  type="button"
-                  onClick={saveProduct}
-                  disabled={productSaveState.loading}
-                >
-                  {productSaveState.loading ? "שומר..." : "שמור מוצר"}
-                </button>
-                <button className="secondary-link" type="button" onClick={cancelEditingProduct}>
-                  ביטול
-                </button>
-              </div>
-            </div>
+      <header className="panel store-hero">
+        <div className="product-image-wrap">
+          {selectedImage ? (
+            <img
+              className="product-image"
+              src={selectedImage}
+              alt={`${product.title} in ${selectedVariant?.color_name ?? "featured"}`}
+            />
           ) : (
-            <>
-              <h1>{product.title}</h1>
-              <p className="subtitle">{product.description}</p>
-            </>
+            <div className="image-placeholder">Product image coming soon</div>
           )}
-          {productSaveState.error ? <p className="error-text">{productSaveState.error}</p> : null}
-          {productSaveState.message ? <p className="saved-text">{productSaveState.message}</p> : null}
         </div>
-        <div className="price-card">
-          <p className="label">Current price</p>
+
+        <div className="hero-content">
+          <p className="eyebrow">Women&apos;s Foldable Loafers</p>
+          <h1>Where Comfort Meets Elegance</h1>
+          <p className="subtitle">
+            Lightweight, foldable loafers designed for all-day confidence and comfort.
+          </p>
           <p className="price">{formatPrice(price, currency)}</p>
-          <p className="muted">Shipping fee: {formatPrice(shippingFee, currency)}</p>
-          {!isEditingProduct ? (
-            <button className="secondary-link product-edit-toggle" type="button" onClick={startEditingProduct}>
-              עריכת מוצר
-            </button>
-          ) : null}
+
+          <div className="actions-row">
+            <button className="cta" type="button">Add to Cart</button>
+            <button className="secondary-link" type="button">Buy Now</button>
+          </div>
+
+          <p className="muted">Ultra-comfortable • Non-slip • Ventilated • Water-resistant</p>
         </div>
       </header>
 
-      {step === "color" ? (
-        <section className="panel">
-          <div className="product-image-wrap">
-            {selectedImage ? (
-              <img
-                className="product-image"
-                src={selectedImage}
-                alt={`${product.title} in ${selectedVariant.color_name}`}
-              />
-            ) : (
-              <div className="image-placeholder">לא נוספה תמונה לצבע הזה עדיין</div>
-            )}
-          </div>
-
-          <h2>Select a color</h2>
-          <div className="variant-grid">
-            {variants.map((variant) => {
-              const isOut = variant.stock_qty === 0;
-              const isSelected = variant.id === selectedVariantId;
-              const variantImage = variant.images?.[0];
-              return (
-                <button
-                  key={variant.id}
-                  className={`variant ${isSelected ? "active" : ""}`}
-                  type="button"
-                  onClick={() => setSelectedVariantId(variant.id)}
-                  disabled={isOut}
-                >
-                  {variantImage ? (
-                    <img
-                      className="variant-image"
-                      src={variantImage}
-                      alt={`${product.title} בצבע ${variant.color_name}`}
-                    />
-                  ) : (
-                    <span className="variant-image-placeholder">אין תמונה</span>
-                  )}
-                  <span className="color" style={{ backgroundColor: variant.color_hex }} />
-                  <span>{variant.color_name}</span>
-                  <span className="variant-rating" aria-label="דירוג 5 מתוך 5 כוכבים">
-                    ★★★★★
-                  </span>
-                  <span className="stock">
-                    {isOut ? "Out of stock" : `Stock: ${variant.stock_qty}`}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="step-actions">
-            <button
-              className="cta"
-              type="button"
-              onClick={() => setStep("size")}
-              disabled={!selectedVariant || selectedVariant.stock_qty === 0}
-            >
-              המשך לבחירת מידה
-            </button>
-          </div>
-        </section>
-      ) : (
-        <section className="panel">
-          <div className="sizes-header">
-            <div>
-              <p className="label">צבע שנבחר</p>
-              <h2>{selectedVariant?.color_name}</h2>
-            </div>
-            <button className="secondary-link" type="button" onClick={() => setStep("color")}>
-              חזרה לבחירת צבע
-            </button>
-          </div>
-
-          <p className="muted">אפשר לבחור כמה מידות שונות או להגדיל כמות במידה אחת.</p>
-
-          <div className="sizes-grid">
-            {sizeOptions.map((size) => {
-              const quantity = sizeQuantities[size] ?? 0;
-              return (
-                <article key={size} className={`size-card ${quantity > 0 ? "active" : ""}`}>
-                  <p className="size-title">מידה {size}</p>
-                  <div className="size-controls">
-                    <button type="button" onClick={() => updateSizeQuantity(size, quantity - 1)}>
-                      -
-                    </button>
-                    <input
-                      type="number"
-                      min={0}
-                      value={quantity}
-                      onChange={(event) =>
-                        updateSizeQuantity(size, Number(event.target.value) || 0)
-                      }
-                    />
-                    <button type="button" onClick={() => updateSizeQuantity(size, quantity + 1)}>
-                      +
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-
-          <div className="selected-sizes">
-            <p className="label">מידות שנבחרו</p>
-            {selectedSizes.length ? (
-              <ul>
-                {selectedSizes.map(([size, quantity]) => (
-                  <li key={size}>
-                    {size} × {quantity}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted">לא נבחרו מידות עדיין.</p>
-            )}
-          </div>
-        </section>
-      )}
+      <section className="panel">
+        <h2>Choose your color</h2>
+        <div className="variant-grid">
+          {variants.map((variant) => {
+            const isOut = variant.stock_qty === 0;
+            const isSelected = variant.id === selectedVariantId;
+            return (
+              <button
+                key={variant.id}
+                className={`variant ${isSelected ? "active" : ""}`}
+                type="button"
+                onClick={() => setSelectedVariantId(variant.id)}
+                disabled={isOut}
+              >
+                <span className="color" style={{ backgroundColor: variant.color_hex }} />
+                <span>{variant.color_name}</span>
+                <span className="stock">{isOut ? "Out of stock" : "In stock"}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="panel">
-        <div className="summary">
-          <div>
-            <p className="label">Total due</p>
-            <p className="total">{formatPrice(total, currency)}</p>
-            <p className="muted">כמות פריטים: {Math.max(selectedItemsCount, 1)}</p>
-          </div>
-          <div className="actions-row">
-            <a className="secondary-link" href="/color-images">
-              ניהול תמונות צבעים
-            </a>
-            <button className="cta" type="button" disabled={selectedVariant?.stock_qty === 0}>
-              Continue to purchase
-            </button>
-          </div>
+        <h2>Benefits</h2>
+        <div className="benefits-grid">
+          {benefitCards.map((benefit) => (
+            <article className="benefit-card" key={benefit.title}>
+              <span className="benefit-icon" aria-hidden="true">{benefit.icon}</span>
+              <h3>{benefit.title}</h3>
+              <p>{benefit.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel">
+        <h2>Specifications</h2>
+        <div className="specification-table-wrap">
+          <table className="specification-table">
+            <tbody>
+              {specificationRows.map(([label, value]) => (
+                <tr key={label}>
+                  <th scope="row">{label}</th>
+                  <td>{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel marketing-panel">
+        <h2>Designed to keep you moving beautifully.</h2>
+        <p>
+          Discover the shoe that transforms your day. Designed with a soft, non-slip sole and
+          ultra-light construction, these loafers deliver maximum comfort without compromising
+          style.
+        </p>
+        <p>
+          Perfect for work, events, and travel — flexible enough to fold and easy enough to wear
+          all day.
+        </p>
+        <div className="actions-row">
+          <button className="cta" type="button">Get Yours Today</button>
+          <a className="secondary-link" href="/color-images">
+            Manage product images
+          </a>
         </div>
       </section>
     </div>
