@@ -29,10 +29,10 @@ function SiteHeader() {
       <img
         className="site-title-banner-image"
         src={titleBannerImage}
-        alt="כותרת האתר"
+        alt="Site title"
       />
       <nav className="menu-bar-placeholder" aria-label="Main menu placeholder">
-        מיקום לבר תפריט
+        Menu bar placeholder
       </nav>
     </header>
   );
@@ -98,7 +98,7 @@ function AdminPage() {
         setProductImages(imagesJson.images || []);
       } catch (loadError) {
         console.error(loadError);
-        setError("לא הצלחנו לטעון את דף הניהול כרגע.");
+        setError("We couldn't load the admin page right now.");
       } finally {
         setLoading(false);
       }
@@ -139,10 +139,10 @@ function AdminPage() {
 
       const data = await response.json();
       setProduct(data.product);
-      setSavedMessage("פרטי המוצר נשמרו בהצלחה.");
+      setSavedMessage("Product details saved successfully.");
     } catch (saveError) {
       console.error(saveError);
-      setError(`שמירת פרטי המוצר נכשלה: ${saveError.message}`);
+      setError(`Failed to save product details: ${saveError.message}`);
     } finally {
       setSavingProduct(false);
     }
@@ -216,10 +216,10 @@ function AdminPage() {
             : current
         )
       );
-      setSavedMessage(`נשמר בהצלחה עבור ${variant.color_name}.`);
+      setSavedMessage(`Saved successfully for ${variant.color_name}.`);
     } catch (saveError) {
       console.error(saveError);
-      setError("שמירת התמונות נכשלה. נסו שוב.");
+      setError("Failed to save images. Please try again.");
     } finally {
       setSavingVariantId(null);
     }
@@ -274,10 +274,10 @@ function AdminPage() {
         price_override: "",
       });
 
-      setSavedMessage("צבע חדש נוסף בהצלחה.");
+      setSavedMessage("New color added successfully.");
     } catch (createError) {
       console.error(createError);
-      setError(`הוספת צבע נכשלה: ${createError.message}`);
+      setError(`Failed to add color: ${createError.message}`);
     }
   };
 
@@ -285,21 +285,21 @@ function AdminPage() {
     <div className="page">
       <header className="hero">
         <div>
-          <p className="eyebrow">ניהול צבעים</p>
-          <h1>ניהול מוצר, צבעים ותמונות</h1>
-          <p className="subtitle">עריכת פרטי המוצר, הוספת צבעים ועדכון גלריית תמונות לכל צבע.</p>
+          <p className="eyebrow">Color Management</p>
+          <h1>Manage Product, Colors, and Images</h1>
+          <p className="subtitle">Edit product details, add colors, and update the image gallery for each color.</p>
         </div>
         <a className="secondary-link" href="/">
-          חזרה לחנות
+          Back to Store
         </a>
       </header>
 
       <section className="panel add-variant-panel">
-        <h2>פרטי המוצר</h2>
+        <h2>Product Details</h2>
         <div className="new-variant-form">
           <input
             type="text"
-            placeholder="שם המוצר"
+            placeholder="Product name"
             value={product?.title ?? ""}
             onChange={(event) => handleProductChange("title", event.target.value)}
           />
@@ -307,7 +307,7 @@ function AdminPage() {
             type="number"
             min={0}
             step={100}
-            placeholder="מחיר באגורות"
+            placeholder="Price in agorot"
             value={product?.base_price ?? ""}
             onChange={(event) => handleProductChange("base_price", event.target.value)}
           />
@@ -315,21 +315,21 @@ function AdminPage() {
         <textarea
           rows={4}
           className="product-description-input"
-          placeholder="תיאור מוצר"
+          placeholder="Product description"
           value={product?.description ?? ""}
           onChange={(event) => handleProductChange("description", event.target.value)}
         />
         <button className="cta" type="button" onClick={saveProduct} disabled={savingProduct}>
-          {savingProduct ? "שומר..." : "שמור פרטי מוצר"}
+          {savingProduct ? "Saving..." : "Save product details"}
         </button>
       </section>
 
       <section className="panel add-variant-panel">
-        <h2>הוספת צבע חדש</h2>
+        <h2>Add New Color</h2>
         <div className="new-variant-form">
           <input
             type="text"
-            placeholder="שם צבע"
+            placeholder="Color name"
             value={newVariant.color_name}
             onChange={(event) => handleNewVariantChange("color_name", event.target.value)}
           />
@@ -337,7 +337,7 @@ function AdminPage() {
             type="color"
             value={newVariant.color_hex}
             onChange={(event) => handleNewVariantChange("color_hex", event.target.value)}
-            aria-label="בחירת צבע"
+            aria-label="Choose color"
           />
           <input
             type="text"
@@ -348,7 +348,7 @@ function AdminPage() {
           <input
             type="number"
             min={0}
-            placeholder="מלאי"
+            placeholder="Stock"
             value={newVariant.stock_qty}
             onChange={(event) => handleNewVariantChange("stock_qty", event.target.value)}
           />
@@ -356,12 +356,12 @@ function AdminPage() {
             type="number"
             min={0}
             step={100}
-            placeholder="מחיר מיוחד באגורות (אופציונלי)"
+            placeholder="Special price in agorot (optional)"
             value={newVariant.price_override}
             onChange={(event) => handleNewVariantChange("price_override", event.target.value)}
           />
           <button className="cta" type="button" onClick={createVariant}>
-            הוסף צבע
+            Add color
           </button>
         </div>
       </section>
@@ -371,7 +371,7 @@ function AdminPage() {
 
       {loading ? (
         <div className="panel">
-          <p>טוען צבעים...</p>
+          <p>Loading colors...</p>
         </div>
       ) : (
         <section className="panel">
@@ -387,21 +387,21 @@ function AdminPage() {
                   <h3>{variant.color_name}</h3>
                   <p className="muted">{variant.sku}</p>
                   <div className="default-image-row">
-                    <span className="field-label">תמונת ברירת מחדל</span>
+                    <span className="field-label">Default image</span>
                     <div className="mini-preview-wrap">
                       {previewImage ? (
                         <img
                           src={previewImage}
                           className="mini-preview"
-                          alt={`תמונת ברירת מחדל עבור ${variant.color_name}`}
+                          alt={`Default image for ${variant.color_name}`}
                         />
                       ) : (
-                        <p className="muted">אין תמונת ברירת מחדל</p>
+                        <p className="muted">No default image</p>
                       )}
                     </div>
                   </div>
 
-                  <label className="field-label">בחר תמונה מהנתיב הקיים</label>
+                  <label className="field-label">Choose image from existing path</label>
                   <select
                     className="image-select"
                     defaultValue=""
@@ -410,7 +410,7 @@ function AdminPage() {
                       event.target.value = "";
                     }}
                   >
-                    <option value="">בחר תמונה...</option>
+                    <option value="">Choose an image...</option>
                     {productImages.map((image) => (
                       <option key={`${variant.id}-${image.url}`} value={image.url}>
                         {image.name}
@@ -432,7 +432,7 @@ function AdminPage() {
                     onClick={() => saveImages(variant)}
                     disabled={savingVariantId === variant.id}
                   >
-                    {savingVariantId === variant.id ? "שומר..." : "שמור תמונות"}
+                    {savingVariantId === variant.id ? "Saving..." : "Save images"}
                   </button>
                 </article>
               );
@@ -509,7 +509,7 @@ function ProductPage({ cartCount, onAddToCart }) {
   return (
     <div className="page">
       <header className="panel top-nav">
-        <button className="secondary-link" type="button" onClick={() => navigateTo("/cart")}>עגלה ({cartCount})</button>
+        <button className="secondary-link" type="button" onClick={() => navigateTo("/cart")}>Cart ({cartCount})</button>
       </header>
 
       <header className="panel store-hero">
@@ -526,12 +526,12 @@ function ProductPage({ cartCount, onAddToCart }) {
         </div>
 
         <div className="hero-content">
-          <p className="eyebrow">דף מוצר</p>
+          <p className="eyebrow">Product Page</p>
           <h1>{product.title}</h1>
           <p className="subtitle">{product.description}</p>
           <p className="price">{formatPrice(price, currency)}</p>
 
-          <label className="field-label" htmlFor="size-select">בחרי מידה</label>
+          <label className="field-label" htmlFor="size-select">Choose size</label>
           <select
             id="size-select"
             className="size-select"
@@ -560,17 +560,17 @@ function ProductPage({ cartCount, onAddToCart }) {
                 });
               }}
             >
-              הוסיפי לעגלה
+              Add to cart
             </button>
-            <button className="secondary-link" type="button" onClick={() => navigateTo("/cart")}>מעבר לעגלה</button>
+            <button className="secondary-link" type="button" onClick={() => navigateTo("/cart")}>Go to cart</button>
           </div>
 
-          <p className="muted">{isOut ? "המוצר בצבע זה אזל מהמלאי" : `צבע: ${selectedVariant?.color_name ?? ""}`}</p>
+          <p className="muted">{isOut ? "This color is out of stock" : `Color: ${selectedVariant?.color_name ?? ""}`}</p>
         </div>
         </header>
 
         <section className="panel">
-        <h2>גלריית תמונות לצבע הנבחר</h2>
+        <h2>Image Gallery for Selected Color</h2>
         {selectedImages.length ? (
           <div className="gallery-grid">
             {selectedImages.map((imageUrl, index) => (
@@ -580,17 +580,17 @@ function ProductPage({ cartCount, onAddToCart }) {
                 className={`gallery-thumb ${imageUrl === mainImage ? "active" : ""}`}
                 onClick={() => setSelectedImage(imageUrl)}
               >
-                <img src={imageUrl} alt={`${selectedVariant?.color_name} - תצוגה ${index + 1}`} />
+                <img src={imageUrl} alt={`${selectedVariant?.color_name} - view ${index + 1}`} />
               </button>
             ))}
           </div>
         ) : (
-          <p className="muted">לא הוגדרו תמונות נוספות לצבע זה.</p>
+          <p className="muted">No additional images were set for this color.</p>
         )}
       </section>
 
       <section className="panel">
-        <h2>בחירת צבע</h2>
+        <h2>Color Selection</h2>
         <div className="variant-grid">
           {variants.map((variant) => {
             const variantIsOut = variant.stock_qty === 0;
@@ -637,13 +637,13 @@ function CartPage({ cartItems, onUpdateQuantity, onRemoveItem }) {
   return (
     <div className="page">
       <header className="panel cart-header">
-        <h1>עגלה</h1>
-        <button className="secondary-link" type="button" onClick={() => navigateTo("/")}>חזרה לדף מוצר</button>
+        <h1>Cart</h1>
+        <button className="secondary-link" type="button" onClick={() => navigateTo("/")}>Back to product page</button>
       </header>
 
       <section className="panel">
         {!cartItems.length ? (
-          <p className="muted">העגלה שלך ריקה כרגע.</p>
+          <p className="muted">Your cart is currently empty.</p>
         ) : (
           <div className="cart-list">
             {cartItems.map((item) => (
@@ -651,12 +651,12 @@ function CartPage({ cartItems, onUpdateQuantity, onRemoveItem }) {
                 {item.image ? <img className="cart-image" src={item.image} alt={item.title} /> : null}
                 <div>
                   <h3>{item.title}</h3>
-                  <p className="muted">צבע: {item.colorName} • מידה: {item.size}</p>
-                  <p className="price-small">{formatPrice(item.price)} לכל יחידה</p>
+                  <p className="muted">Color: {item.colorName} • Size: {item.size}</p>
+                  <p className="price-small">{formatPrice(item.price)} per unit</p>
                 </div>
                 <div className="cart-actions">
                   <label>
-                    כמות
+                    Quantity
                     <input
                       type="number"
                       min={1}
@@ -667,7 +667,7 @@ function CartPage({ cartItems, onUpdateQuantity, onRemoveItem }) {
                     />
                   </label>
                   <button type="button" className="secondary-link" onClick={() => onRemoveItem(item.variantId, item.size)}>
-                    הסרה
+                    Remove
                   </button>
                 </div>
               </article>
@@ -677,9 +677,9 @@ function CartPage({ cartItems, onUpdateQuantity, onRemoveItem }) {
       </section>
 
       <section className="panel cart-summary">
-        <h2>סיכום הזמנה</h2>
+        <h2>Order Summary</h2>
         <p className="price">{formatPrice(total)}</p>
-        <button className="cta" type="button" disabled={!cartItems.length}>לתשלום</button>
+        <button className="cta" type="button" disabled={!cartItems.length}>Checkout</button>
       </section>
     </div>
   );
