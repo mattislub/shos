@@ -551,9 +551,9 @@ function ProductPage({ cartCount, onAddToCart }) {
 
           <p className="muted">{isOut ? "המוצר בצבע זה אזל מהמלאי" : `צבע: ${selectedVariant?.color_name ?? ""}`}</p>
         </div>
-      </header>
+        </header>
 
-      <section className="panel">
+        <section className="panel">
         <h2>גלריית תמונות לצבע הנבחר</h2>
         {selectedImages.length ? (
           <div className="gallery-grid">
@@ -665,7 +665,8 @@ function CartPage({ cartItems, onUpdateQuantity, onRemoveItem }) {
         <p className="price">{formatPrice(total)}</p>
         <button className="cta" type="button" disabled={!cartItems.length}>לתשלום</button>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
 
