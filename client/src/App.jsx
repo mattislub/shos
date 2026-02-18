@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import titleBannerImage from "./assets/products/Image (2).png";
 
 const formatPrice = (value, currency = "ILS") =>
   new Intl.NumberFormat("en-US", {
@@ -21,6 +22,21 @@ const navigateTo = (path) => {
 };
 
 const sizeOptions = ["36", "37", "38", "39", "40", "41"];
+
+function SiteHeader() {
+  return (
+    <header className="site-title-banner">
+      <img
+        className="site-title-banner-image"
+        src={titleBannerImage}
+        alt="כותרת האתר"
+      />
+      <nav className="menu-bar-placeholder" aria-label="Main menu placeholder">
+        מיקום לבר תפריט
+      </nav>
+    </header>
+  );
+}
 
 function AdminPage() {
   const [product, setProduct] = useState(null);
@@ -726,20 +742,33 @@ export default function App() {
   };
 
   if (page === "admin") {
-    return <AdminPage />;
+    return (
+      <>
+        <SiteHeader />
+        <AdminPage />
+      </>
+    );
   }
 
   if (page === "cart") {
     return (
-      <CartPage
-        cartItems={cartItems}
-        onRemoveItem={removeItem}
-        onUpdateQuantity={updateQuantity}
-      />
+      <>
+        <SiteHeader />
+        <CartPage
+          cartItems={cartItems}
+          onRemoveItem={removeItem}
+          onUpdateQuantity={updateQuantity}
+        />
+      </>
     );
   }
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  return <ProductPage cartCount={cartCount} onAddToCart={addToCart} />;
+  return (
+    <>
+      <SiteHeader />
+      <ProductPage cartCount={cartCount} onAddToCart={addToCart} />
+    </>
+  );
 }
