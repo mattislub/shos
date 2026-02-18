@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import siteTitleImage from "./assets/products/Image (2).png";
 
 const formatPrice = (value, currency = "ILS") =>
   new Intl.NumberFormat("en-US", {
@@ -487,8 +488,16 @@ function StorePage() {
   ];
 
   return (
-    <div className="page">
-      <header className="panel store-hero">
+    <>
+      <section className="site-title-banner" aria-label="Site title and menu location">
+        <img src={siteTitleImage} alt="Site title" className="site-title-banner-image" />
+        <nav className="menu-bar-placeholder" aria-label="Main menu">
+          <span>Menu bar location</span>
+        </nav>
+      </section>
+
+      <div className="page">
+        <header className="panel store-hero">
         <div className="product-image-wrap">
           {mainImage ? (
             <img
@@ -516,9 +525,9 @@ function StorePage() {
 
           <p className="muted">Ultra-comfortable • Non-slip • Ventilated • Water-resistant</p>
         </div>
-      </header>
+        </header>
 
-      <section className="panel">
+        <section className="panel">
         <h2>גלריית תמונות לצבע הנבחר</h2>
         {selectedImages.length ? (
           <div className="gallery-grid">
@@ -538,8 +547,8 @@ function StorePage() {
         )}
       </section>
 
-      <section className="panel">
-        <h2>Choose your color</h2>
+        <section className="panel">
+          <h2>Choose your color</h2>
         <div className="variant-grid">
           {variants.map((variant) => {
             const isOut = variant.stock_qty === 0;
@@ -605,7 +614,8 @@ function StorePage() {
           <button className="cta" type="button">Get Yours Today</button>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }
 
