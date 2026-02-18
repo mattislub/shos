@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const formatPrice = (value, currency = "ILS") =>
   new Intl.NumberFormat("en-US", {
@@ -9,8 +9,18 @@ const formatPrice = (value, currency = "ILS") =>
 
 const resolvePrice = (variant, basePrice) => variant.price_override ?? basePrice;
 
-const getPage = () =>
-  window.location.pathname === "/admin" ? "admin" : "store";
+const getPage = () => {
+  if (window.location.pathname === "/admin") return "admin";
+  if (window.location.pathname === "/cart") return "cart";
+  return "product";
+};
+
+const navigateTo = (path) => {
+  window.history.pushState({}, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+};
+
+const sizeOptions = ["36", "37", "38", "39", "40", "41"];
 
 function AdminPage() {
   const [product, setProduct] = useState(null);
@@ -418,11 +428,12 @@ function AdminPage() {
   );
 }
 
-function StorePage() {
+function ProductPage({ cartCount, onAddToCart }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(sizeOptions[0]);
 
   useEffect(() => {
     const load = async () => {
@@ -470,6 +481,8 @@ function StorePage() {
   const { product, variants, settings } = data;
   const currency = settings?.currency ?? "ILS";
   const price = selectedVariant ? resolvePrice(selectedVariant, product.base_price) : 0;
+  const isOut = selectedVariant?.stock_qty === 0;
+
   const benefitCards = [
     { icon: "☁️", title: "All-day comfort", text: "Soft support that helps reduce pressure and fatigue." },
     { icon: "🛡️", title: "Non-slip stability", text: "Confident traction for city streets and smooth floors." },
@@ -477,17 +490,12 @@ function StorePage() {
     { icon: "✨", title: "Any occasion ready", text: "Perfect for workdays, events, and quick weekend trips." },
   ];
 
-  const specificationRows = [
-    ["Sole material", "Non-slip PVC"],
-    ["Outer material", "PVC"],
-    ["Closure type", "Pull-On (No laces)"],
-    ["Water resistance", "Water-resistant finish"],
-    ["Heel type", "Flat heel"],
-    ["Toe style", "Round toe"],
-  ];
-
   return (
     <div className="page">
+      <header className="panel top-nav">
+        <button className="secondary-link" type="button" onClick={() => navigateTo("/cart")}>עגלה ({cartCount})</button>
+      </header>
+
       <header className="panel store-hero">
         <div className="product-image-wrap">
           {mainImage ? (
@@ -502,19 +510,46 @@ function StorePage() {
         </div>
 
         <div className="hero-content">
-          <p className="eyebrow">Women&apos;s Foldable Loafers</p>
-          <h1>Where Comfort Meets Elegance</h1>
-          <p className="subtitle">
-            Lightweight, foldable loafers designed for all-day confidence and comfort.
-          </p>
+          <p className="eyebrow">דף מוצר</p>
+          <h1>{product.title}</h1>
+          <p className="subtitle">{product.description}</p>
           <p className="price">{formatPrice(price, currency)}</p>
 
+          <label className="field-label" htmlFor="size-select">בחרי מידה</label>
+          <select
+            id="size-select"
+            className="size-select"
+            value={selectedSize}
+            onChange={(event) => setSelectedSize(event.target.value)}
+          >
+            {sizeOptions.map((size) => (
+              <option value={size} key={size}>{size}</option>
+            ))}
+          </select>
+
           <div className="actions-row">
-            <button className="cta" type="button">Add to Cart</button>
-            <button className="secondary-link" type="button">Buy Now</button>
+            <button
+              className="cta"
+              type="button"
+              disabled={!selectedVariant || isOut}
+              onClick={() => {
+                if (!selectedVariant) return;
+                onAddToCart({
+                  variantId: selectedVariant.id,
+                  colorName: selectedVariant.color_name,
+                  size: selectedSize,
+                  price,
+                  image: mainImage,
+                  title: product.title,
+                });
+              }}
+            >
+              הוסיפי לעגלה
+            </button>
+            <button className="secondary-link" type="button" onClick={() => navigateTo("/cart")}>מעבר לעגלה</button>
           </div>
 
-          <p className="muted">Ultra-comfortable • Non-slip • Ventilated • Water-resistant</p>
+          <p className="muted">{isOut ? "המוצר בצבע זה אזל מהמלאי" : `צבע: ${selectedVariant?.color_name ?? ""}`}</p>
         </div>
       </header>
 
@@ -539,10 +574,10 @@ function StorePage() {
       </section>
 
       <section className="panel">
-        <h2>Choose your color</h2>
+        <h2>בחירת צבע</h2>
         <div className="variant-grid">
           {variants.map((variant) => {
-            const isOut = variant.stock_qty === 0;
+            const variantIsOut = variant.stock_qty === 0;
             const isSelected = variant.id === selectedVariantId;
             return (
               <button
@@ -550,11 +585,11 @@ function StorePage() {
                 className={`variant ${isSelected ? "active" : ""}`}
                 type="button"
                 onClick={() => setSelectedVariantId(variant.id)}
-                disabled={isOut}
+                disabled={variantIsOut}
               >
                 <span className="color" style={{ backgroundColor: variant.color_hex }} />
                 <span>{variant.color_name}</span>
-                <span className="stock">{isOut ? "Out of stock" : "In stock"}</span>
+                <span className="stock">{variantIsOut ? "Out of stock" : "In stock"}</span>
               </button>
             );
           })}
@@ -573,37 +608,62 @@ function StorePage() {
           ))}
         </div>
       </section>
+    </div>
+  );
+}
+
+function CartPage({ cartItems, onUpdateQuantity, onRemoveItem }) {
+  const total = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [cartItems]
+  );
+
+  return (
+    <div className="page">
+      <header className="panel cart-header">
+        <h1>עגלה</h1>
+        <button className="secondary-link" type="button" onClick={() => navigateTo("/")}>חזרה לדף מוצר</button>
+      </header>
 
       <section className="panel">
-        <h2>Specifications</h2>
-        <div className="specification-table-wrap">
-          <table className="specification-table">
-            <tbody>
-              {specificationRows.map(([label, value]) => (
-                <tr key={label}>
-                  <th scope="row">{label}</th>
-                  <td>{value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {!cartItems.length ? (
+          <p className="muted">העגלה שלך ריקה כרגע.</p>
+        ) : (
+          <div className="cart-list">
+            {cartItems.map((item) => (
+              <article className="cart-item" key={`${item.variantId}-${item.size}`}>
+                {item.image ? <img className="cart-image" src={item.image} alt={item.title} /> : null}
+                <div>
+                  <h3>{item.title}</h3>
+                  <p className="muted">צבע: {item.colorName} • מידה: {item.size}</p>
+                  <p className="price-small">{formatPrice(item.price)} לכל יחידה</p>
+                </div>
+                <div className="cart-actions">
+                  <label>
+                    כמות
+                    <input
+                      type="number"
+                      min={1}
+                      value={item.quantity}
+                      onChange={(event) =>
+                        onUpdateQuantity(item.variantId, item.size, Number(event.target.value))
+                      }
+                    />
+                  </label>
+                  <button type="button" className="secondary-link" onClick={() => onRemoveItem(item.variantId, item.size)}>
+                    הסרה
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
-      <section className="panel marketing-panel">
-        <h2>Designed to keep you moving beautifully.</h2>
-        <p>
-          Discover the shoe that transforms your day. Designed with a soft, non-slip sole and
-          ultra-light construction, these loafers deliver maximum comfort without compromising
-          style.
-        </p>
-        <p>
-          Perfect for work, events, and travel — flexible enough to fold and easy enough to wear
-          all day.
-        </p>
-        <div className="actions-row">
-          <button className="cta" type="button">Get Yours Today</button>
-        </div>
+      <section className="panel cart-summary">
+        <h2>סיכום הזמנה</h2>
+        <p className="price">{formatPrice(total)}</p>
+        <button className="cta" type="button" disabled={!cartItems.length}>לתשלום</button>
       </section>
     </div>
   );
@@ -611,6 +671,14 @@ function StorePage() {
 
 export default function App() {
   const [page, setPage] = useState(getPage());
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cart_items");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     const onPopState = () => setPage(getPage());
@@ -618,9 +686,60 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("cart_items", JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  const addToCart = (newItem) => {
+    setCartItems((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.variantId === newItem.variantId && item.size === newItem.size
+      );
+
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: updated[existingIndex].quantity + 1,
+        };
+        return updated;
+      }
+
+      return [...prev, { ...newItem, quantity: 1 }];
+    });
+  };
+
+  const updateQuantity = (variantId, size, quantity) => {
+    if (!quantity || quantity < 1) return;
+
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item.variantId === variantId && item.size === size ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  const removeItem = (variantId, size) => {
+    setCartItems((prev) =>
+      prev.filter((item) => !(item.variantId === variantId && item.size === size))
+    );
+  };
+
   if (page === "admin") {
     return <AdminPage />;
   }
 
-  return <StorePage />;
+  if (page === "cart") {
+    return (
+      <CartPage
+        cartItems={cartItems}
+        onRemoveItem={removeItem}
+        onUpdateQuantity={updateQuantity}
+      />
+    );
+  }
+
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  return <ProductPage cartCount={cartCount} onAddToCart={addToCart} />;
 }
