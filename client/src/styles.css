@@ -65,6 +65,30 @@ body {
   line-height: 1.1;
 }
 
+
+.site-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.site-title-image {
+  width: min(100%, 280px);
+  height: auto;
+  object-fit: contain;
+}
+
+.menu-bar-placeholder {
+  margin: 4px 0 10px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #475569;
+  font-size: 14px;
+  background: #f8fafc;
+}
+
 .eyebrow,
 .label {
   text-transform: uppercase;
