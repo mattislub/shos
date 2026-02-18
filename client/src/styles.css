@@ -37,6 +37,8 @@ body {
   height: auto;
   object-fit: contain;
   display: block;
+  border-radius: 16px;
+  border: 1px solid #ffffff;
 }
 
 .page {
@@ -402,6 +404,8 @@ body {
   height: auto;
   object-fit: contain;
   display: block;
+  border-radius: 16px;
+  border: 1px solid #ffffff;
 }
 
 .page {
