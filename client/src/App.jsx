@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import siteTitleImage from "./assets/products/Image (2).png";
 
 const formatPrice = (value, currency = "ILS") =>
   new Intl.NumberFormat("en-US", {
@@ -503,7 +504,13 @@ function StorePage() {
 
         <div className="hero-content">
           <p className="eyebrow">Women&apos;s Foldable Loafers</p>
-          <h1>Where Comfort Meets Elegance</h1>
+          <h1 className="site-title">
+            <img src={siteTitleImage} alt="Site title" className="site-title-image" />
+            Where Comfort Meets Elegance
+          </h1>
+          <nav className="menu-bar-placeholder" aria-label="Main menu">
+            <span>Menu bar location</span>
+          </nav>
           <p className="subtitle">
             Lightweight, foldable loafers designed for all-day confidence and comfort.
           </p>
