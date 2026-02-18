@@ -10,13 +10,15 @@ const formatPrice = (value, currency = "ILS") =>
 const resolvePrice = (variant, basePrice) => variant.price_override ?? basePrice;
 
 const getPage = () =>
-  window.location.pathname === "/color-images" ? "color-images" : "store";
+  window.location.pathname === "/admin" ? "admin" : "store";
 
-function ColorImagesPage() {
+function AdminPage() {
+  const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingVariantId, setSavingVariantId] = useState(null);
+  const [savingProduct, setSavingProduct] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
   const [productImages, setProductImages] = useState([]);
   const [newVariant, setNewVariant] = useState({
@@ -32,10 +34,15 @@ function ColorImagesPage() {
       try {
         setError("");
 
-        const [variantsResponse, imagesResponse] = await Promise.all([
+        const [productResponse, variantsResponse, imagesResponse] = await Promise.all([
+          fetch("/api/product"),
           fetch("/api/variants"),
           fetch("/api/product-images"),
         ]);
+
+        if (!productResponse.ok) {
+          throw new Error("Failed to load product");
+        }
 
         if (!variantsResponse.ok) {
           throw new Error("Failed to load variants");
@@ -45,8 +52,16 @@ function ColorImagesPage() {
           throw new Error("Failed to load product images");
         }
 
+        const productJson = await productResponse.json();
         const variantsJson = await variantsResponse.json();
         const imagesJson = await imagesResponse.json();
+
+        setProduct({
+          id: productJson.product.id,
+          title: productJson.product.title,
+          description: productJson.product.description,
+          base_price: productJson.product.base_price,
+        });
 
         const mapped = (variantsJson.variants || []).map((variant) => ({
           ...variant,
@@ -57,7 +72,7 @@ function ColorImagesPage() {
         setProductImages(imagesJson.images || []);
       } catch (loadError) {
         console.error(loadError);
-        setError("לא הצלחנו לטעון את רשימת הצבעים כרגע.");
+        setError("לא הצלחנו לטעון את דף הניהול כרגע.");
       } finally {
         setLoading(false);
       }
@@ -65,6 +80,47 @@ function ColorImagesPage() {
 
     load();
   }, []);
+
+  const handleProductChange = (field, value) => {
+    setSavedMessage("");
+    setProduct((prev) => (prev ? { ...prev, [field]: value } : prev));
+  };
+
+  const saveProduct = async () => {
+    if (!product) {
+      return;
+    }
+
+    try {
+      setSavingProduct(true);
+      setError("");
+      setSavedMessage("");
+
+      const response = await fetch(`/api/product/${product.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: product.title,
+          description: product.description,
+          base_price: Number(product.base_price),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to save product");
+      }
+
+      const data = await response.json();
+      setProduct(data.product);
+      setSavedMessage("פרטי המוצר נשמרו בהצלחה.");
+    } catch (saveError) {
+      console.error(saveError);
+      setError(`שמירת פרטי המוצר נכשלה: ${saveError.message}`);
+    } finally {
+      setSavingProduct(false);
+    }
+  };
 
   const handleDraftChange = (variantId, value) => {
     setSavedMessage("");
@@ -204,13 +260,43 @@ function ColorImagesPage() {
       <header className="hero">
         <div>
           <p className="eyebrow">ניהול צבעים</p>
-          <h1>העלאת תמונות לכל צבע</h1>
-          <p className="subtitle">ניתן לבחור תמונות מהמאגר וגם להדביק קישורים ידנית.</p>
+          <h1>ניהול מוצר, צבעים ותמונות</h1>
+          <p className="subtitle">עריכת פרטי המוצר, הוספת צבעים ועדכון גלריית תמונות לכל צבע.</p>
         </div>
         <a className="secondary-link" href="/">
           חזרה לחנות
         </a>
       </header>
+
+      <section className="panel add-variant-panel">
+        <h2>פרטי המוצר</h2>
+        <div className="new-variant-form">
+          <input
+            type="text"
+            placeholder="שם המוצר"
+            value={product?.title ?? ""}
+            onChange={(event) => handleProductChange("title", event.target.value)}
+          />
+          <input
+            type="number"
+            min={0}
+            step={100}
+            placeholder="מחיר באגורות"
+            value={product?.base_price ?? ""}
+            onChange={(event) => handleProductChange("base_price", event.target.value)}
+          />
+        </div>
+        <textarea
+          rows={4}
+          className="product-description-input"
+          placeholder="תיאור מוצר"
+          value={product?.description ?? ""}
+          onChange={(event) => handleProductChange("description", event.target.value)}
+        />
+        <button className="cta" type="button" onClick={saveProduct} disabled={savingProduct}>
+          {savingProduct ? "שומר..." : "שמור פרטי מוצר"}
+        </button>
+      </section>
 
       <section className="panel add-variant-panel">
         <h2>הוספת צבע חדש</h2>
@@ -274,6 +360,20 @@ function ColorImagesPage() {
                 <article key={variant.id} className="image-card">
                   <h3>{variant.color_name}</h3>
                   <p className="muted">{variant.sku}</p>
+                  <div className="default-image-row">
+                    <span className="field-label">תמונת ברירת מחדל</span>
+                    <div className="mini-preview-wrap">
+                      {previewImage ? (
+                        <img
+                          src={previewImage}
+                          className="mini-preview"
+                          alt={`תמונת ברירת מחדל עבור ${variant.color_name}`}
+                        />
+                      ) : (
+                        <p className="muted">אין תמונת ברירת מחדל</p>
+                      )}
+                    </div>
+                  </div>
 
                   <label className="field-label">בחר תמונה מהנתיב הקיים</label>
                   <select
@@ -308,17 +408,6 @@ function ColorImagesPage() {
                   >
                     {savingVariantId === variant.id ? "שומר..." : "שמור תמונות"}
                   </button>
-                  <div className="mini-preview-wrap">
-                    {previewImage ? (
-                      <img
-                        src={previewImage}
-                        className="mini-preview"
-                        alt={`תצוגה מקדימה עבור ${variant.color_name}`}
-                      />
-                    ) : (
-                      <p className="muted">אין תמונה לתצוגה מקדימה</p>
-                    )}
-                  </div>
                 </article>
               );
             })}
@@ -333,6 +422,7 @@ function StorePage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -354,6 +444,12 @@ function StorePage() {
   }, []);
 
   const selectedVariant = data?.variants.find((variant) => variant.id === selectedVariantId);
+  const selectedImages = selectedVariant?.images?.length ? selectedVariant.images : [];
+  const mainImage = selectedImage || selectedImages[0] || null;
+
+  useEffect(() => {
+    setSelectedImage(selectedImages[0] || null);
+  }, [selectedVariantId, selectedImages]);
 
   if (loading) {
     return (
@@ -374,7 +470,6 @@ function StorePage() {
   const { product, variants, settings } = data;
   const currency = settings?.currency ?? "ILS";
   const price = selectedVariant ? resolvePrice(selectedVariant, product.base_price) : 0;
-  const selectedImage = selectedVariant?.images?.[0] ?? null;
   const benefitCards = [
     { icon: "☁️", title: "All-day comfort", text: "Soft support that helps reduce pressure and fatigue." },
     { icon: "🛡️", title: "Non-slip stability", text: "Confident traction for city streets and smooth floors." },
@@ -395,10 +490,10 @@ function StorePage() {
     <div className="page">
       <header className="panel store-hero">
         <div className="product-image-wrap">
-          {selectedImage ? (
+          {mainImage ? (
             <img
               className="product-image"
-              src={selectedImage}
+              src={mainImage}
               alt={`${product.title} in ${selectedVariant?.color_name ?? "featured"}`}
             />
           ) : (
@@ -422,6 +517,26 @@ function StorePage() {
           <p className="muted">Ultra-comfortable • Non-slip • Ventilated • Water-resistant</p>
         </div>
       </header>
+
+      <section className="panel">
+        <h2>גלריית תמונות לצבע הנבחר</h2>
+        {selectedImages.length ? (
+          <div className="gallery-grid">
+            {selectedImages.map((imageUrl, index) => (
+              <button
+                key={`${imageUrl}-${index}`}
+                type="button"
+                className={`gallery-thumb ${imageUrl === mainImage ? "active" : ""}`}
+                onClick={() => setSelectedImage(imageUrl)}
+              >
+                <img src={imageUrl} alt={`${selectedVariant?.color_name} - תצוגה ${index + 1}`} />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">לא הוגדרו תמונות נוספות לצבע זה.</p>
+        )}
+      </section>
 
       <section className="panel">
         <h2>Choose your color</h2>
@@ -488,9 +603,6 @@ function StorePage() {
         </p>
         <div className="actions-row">
           <button className="cta" type="button">Get Yours Today</button>
-          <a className="secondary-link" href="/color-images">
-            Manage product images
-          </a>
         </div>
       </section>
     </div>
@@ -506,8 +618,8 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  if (page === "color-images") {
-    return <ColorImagesPage />;
+  if (page === "admin") {
+    return <AdminPage />;
   }
 
   return <StorePage />;
