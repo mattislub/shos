@@ -665,8 +665,7 @@ function CartPage({ cartItems, onUpdateQuantity, onRemoveItem }) {
         <p className="price">{formatPrice(total)}</p>
         <button className="cta" type="button" disabled={!cartItems.length}>לתשלום</button>
       </section>
-      </div>
-    </>
+    </div>
   );
 }
 
