@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const fallbackProduct = {
   title: "סניקרס Horizon X",
@@ -25,13 +25,6 @@ const serverBaseUrl = (() => {
     return window.location.origin;
   }
 })();
-
-const formatIls = (amount) =>
-  new Intl.NumberFormat("he-IL", {
-    style: "currency",
-    currency: "ILS",
-    maximumFractionDigits: 0
-  }).format(amount / 100);
 
 const MAX_UPLOAD_EDGE_PX = 1600;
 const MAX_UPLOAD_BYTES = 900 * 1024;
@@ -168,9 +161,8 @@ const useProduct = () => {
 
 const StorePage = () => {
   const { product, homeHeroImageUrl, loading, error } = useProduct();
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const colorOptions = ["שחור", "לבן", "אפור", "כחול"];
+  const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
   const [status, setStatus] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
@@ -192,31 +184,7 @@ const StorePage = () => {
 
   const submitOrder = async (event) => {
     event.preventDefault();
-    setStatus("");
-
-    if (!name.trim() || !phone.trim()) {
-      setStatus("נא למלא שם וטלפון.");
-      return;
-    }
-
-    try {
-      const response = await fetch(`${apiUrl}/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customer_name: name.trim(), phone: phone.trim(), quantity })
-      });
-
-      if (!response.ok) {
-        throw new Error("Order failed");
-      }
-
-      setStatus("ההזמנה התקבלה בהצלחה! נחזור אליך בהקדם.");
-      setName("");
-      setPhone("");
-      setQuantity(1);
-    } catch (_err) {
-      setStatus("לא הצלחנו לשלוח הזמנה כרגע. אפשר לנסות שוב בעוד רגע.");
-    }
+    setStatus(`הצבע שנבחר: ${selectedColor}. אפשר להמשיך לשלב הבא.`);
   };
 
   return (
@@ -264,21 +232,21 @@ const StorePage = () => {
 
         <h1>{currentProduct.title}</h1>
         <p>{currentProduct.description}</p>
-        <p className="price">{formatIls(currentProduct.price_ils)}</p>
 
-        <form onSubmit={submitOrder} className="order-form">
-          <input placeholder="שם מלא" value={name} onChange={(event) => setName(event.target.value)} />
-          <input placeholder="טלפון" value={phone} onChange={(event) => setPhone(event.target.value)} />
-          <input
-            type="number"
-            min="1"
-            value={quantity}
-            onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
-          />
-          <button type="submit">{currentProduct.cta_text}</button>
+        <form onSubmit={proceedToNextStep} className="order-form">
+          <label className="color-picker-label">
+            בחירת צבע
+            <select value={selectedColor} onChange={(event) => setSelectedColor(event.target.value)}>
+              {colorOptions.map((color) => (
+                <option key={color} value={color}>
+                  {color}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit">המשך</button>
         </form>
 
-        <p className="total">סה״כ לתשלום: {totalLabel}</p>
         {status ? <p className="status">{status}</p> : null}
       </section>
     </main>
