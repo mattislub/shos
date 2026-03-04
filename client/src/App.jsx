@@ -13,6 +13,9 @@ const fallbackProduct = {
   cta_text: "אני רוצה להזמין"
 };
 
+const fallbackHomeHeroImage =
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=80";
+
 const apiUrl = (import.meta.env.VITE_API_URL || "/api").trim();
 
 const serverBaseUrl = (() => {
@@ -126,6 +129,7 @@ const normalizeProduct = (product) => {
 
 const useProduct = () => {
   const [product, setProduct] = useState(null);
+  const [homeHeroImageUrl, setHomeHeroImageUrl] = useState(fallbackHomeHeroImage);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -142,11 +146,13 @@ const useProduct = () => {
 
         const payload = await response.json();
         setProduct(normalizeProduct(payload.product || fallbackProduct));
+        setHomeHeroImageUrl(toAbsoluteImageUrl(payload.home_hero_image_url || fallbackHomeHeroImage));
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error("Product update from server failed:", err);
           setError("לא הצלחנו לטעון את הנתונים מהשרת. מוצגת תצוגת ברירת מחדל.");
           setProduct(normalizeProduct(fallbackProduct));
+          setHomeHeroImageUrl(fallbackHomeHeroImage);
         }
       } finally {
         setLoading(false);
@@ -157,11 +163,11 @@ const useProduct = () => {
     return () => controller.abort();
   }, []);
 
-  return { product, setProduct, loading, error };
+  return { product, setProduct, homeHeroImageUrl, setHomeHeroImageUrl, loading, error };
 };
 
 const StorePage = () => {
-  const { product, loading, error } = useProduct();
+  const { product, homeHeroImageUrl, loading, error } = useProduct();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -207,6 +213,21 @@ const StorePage = () => {
 
   return (
     <main className="page" dir="rtl">
+      <header className="home-header">
+        <h1 className="home-title">ברוכים הבאים לחנות</h1>
+        <nav className="home-actions" aria-label="פעולות ראשיות">
+          <button type="button">צור קשר</button>
+          <button type="button">אודות</button>
+          <button type="button">התחבר</button>
+          <button type="button">עגלה</button>
+          <button type="button">רשימת משאלות</button>
+        </nav>
+      </header>
+
+      <section className="hero-banner">
+        <img src={homeHeroImageUrl} alt="באנר ראשי" className="hero-banner-image" />
+      </section>
+
       <section className="card">
         {loading ? <p>טוען מוצר...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
@@ -252,13 +273,16 @@ const StorePage = () => {
 };
 
 const AdminPage = () => {
-  const { product, setProduct, loading, error } = useProduct();
+  const { product, setProduct, homeHeroImageUrl, setHomeHeroImageUrl, loading, error } = useProduct();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priceIls, setPriceIls] = useState("");
   const [ctaText, setCtaText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [activeTab, setActiveTab] = useState("product");
+  const [heroFile, setHeroFile] = useState(null);
   const [status, setStatus] = useState("");
+  const [heroStatus, setHeroStatus] = useState("");
 
   useEffect(() => {
     const current = normalizeProduct(product || fallbackProduct);
@@ -375,6 +399,41 @@ const AdminPage = () => {
 
   const previewProduct = normalizeProduct(product || fallbackProduct);
 
+  const saveHomeHero = async (event) => {
+    event.preventDefault();
+    setHeroStatus("");
+
+    if (!heroFile) {
+      setHeroStatus("נא לבחור תמונה לפני שמירה.");
+      return;
+    }
+
+    try {
+      const uploadedImage = await compressImageForUpload(heroFile);
+      const response = await fetch(`${apiUrl}/admin/home-hero`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: {
+            name: uploadedImage.name,
+            data: uploadedImage.data
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("hero save failed");
+      }
+
+      const payload = await response.json();
+      setHomeHeroImageUrl(toAbsoluteImageUrl(payload.home_hero_image_url || ""));
+      setHeroFile(null);
+      setHeroStatus("תמונת הבאנר נשמרה בהצלחה.");
+    } catch (_error) {
+      setHeroStatus("שמירת תמונת הבאנר נכשלה.");
+    }
+  };
+
   return (
     <main className="page" dir="rtl">
       <section className="card">
@@ -382,44 +441,89 @@ const AdminPage = () => {
         {loading ? <p>טוען מוצר...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
 
-        <form onSubmit={saveProduct} className="order-form">
-          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="כותרת" />
-          <textarea
-            className="admin-textarea"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="תיאור"
-          />
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={priceIls}
-            onChange={(event) => setPriceIls(event.target.value)}
-            placeholder="מחיר בש״ח"
-          />
-          <input value={ctaText} onChange={(event) => setCtaText(event.target.value)} placeholder="טקסט כפתור" />
-          <label className="file-label">
-            העלאת תמונות מוצר (אפשר לבחור כמה קבצים)
-            <input type="file" accept="image/*" multiple onChange={onFilesSelected} />
-          </label>
-          {selectedFiles.length > 0 ? (
-            <p className="status">נבחרו {selectedFiles.length} קבצים להעלאה.</p>
-          ) : null}
-
-          <button type="submit">שמור מוצר</button>
-        </form>
-
-        <h2>תמונות פעילות</h2>
-        <div className="thumb-grid">
-          {previewProduct.images.map((image, index) => (
-            <div key={`${image}-${index}`} className="thumb thumb-static">
-              <img src={image} alt={`תמונת מוצר ${index + 1}`} />
-            </div>
-          ))}
+        <div className="admin-tabs" role="tablist" aria-label="לשוניות ניהול">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "product"}
+            className={`tab-button ${activeTab === "product" ? "tab-button-active" : ""}`}
+            onClick={() => setActiveTab("product")}
+          >
+            מוצר
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "hero"}
+            className={`tab-button ${activeTab === "hero" ? "tab-button-active" : ""}`}
+            onClick={() => setActiveTab("hero")}
+          >
+            תמונת באנר בית
+          </button>
         </div>
 
-        {status ? <p className="status">{status}</p> : null}
+        {activeTab === "product" ? (
+          <>
+            <form onSubmit={saveProduct} className="order-form">
+              <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="כותרת" />
+              <textarea
+                className="admin-textarea"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="תיאור"
+              />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={priceIls}
+                onChange={(event) => setPriceIls(event.target.value)}
+                placeholder="מחיר בש״ח"
+              />
+              <input value={ctaText} onChange={(event) => setCtaText(event.target.value)} placeholder="טקסט כפתור" />
+              <label className="file-label">
+                העלאת תמונות מוצר (אפשר לבחור כמה קבצים)
+                <input type="file" accept="image/*" multiple onChange={onFilesSelected} />
+              </label>
+              {selectedFiles.length > 0 ? (
+                <p className="status">נבחרו {selectedFiles.length} קבצים להעלאה.</p>
+              ) : null}
+
+              <button type="submit">שמור מוצר</button>
+            </form>
+
+            <h2>תמונות פעילות</h2>
+            <div className="thumb-grid">
+              {previewProduct.images.map((image, index) => (
+                <div key={`${image}-${index}`} className="thumb thumb-static">
+                  <img src={image} alt={`תמונת מוצר ${index + 1}`} />
+                </div>
+              ))}
+            </div>
+
+            {status ? <p className="status">{status}</p> : null}
+          </>
+        ) : (
+          <>
+            <form onSubmit={saveHomeHero} className="order-form">
+              <label className="file-label">
+                העלאת תמונת באנר לרוחב לדף הבית
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setHeroFile(event.target.files?.[0] || null)}
+                />
+              </label>
+
+              <button type="submit">שמור תמונת באנר</button>
+            </form>
+
+            <h2>תמונת באנר נוכחית</h2>
+            <img src={homeHeroImageUrl} alt="תמונת באנר" className="hero-banner-image" />
+
+            {heroStatus ? <p className="status">{heroStatus}</p> : null}
+          </>
+        )}
       </section>
     </main>
   );
