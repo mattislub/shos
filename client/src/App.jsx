@@ -302,11 +302,34 @@ const StorePage = () => {
         </div>
       </section>
 
+     
       <section className="card stacked-home-images" aria-label="Additional home images">
         <img src="/uploads/abc.jpg" alt="Promotional image top" className="stacked-home-image" />
         <img src="/uploads/dfg.jpg" alt="Promotional image bottom" className="stacked-home-image" />
       </section>
+ <footer className="site-footer" aria-label="עדכונים ויצירת קשר">
+        <div className="footer-block">
+          <h2>הצטרפו לעדכונים</h2>
+          <p>השאירו כתובת מייל וקבלו הטבות, מוצרים חדשים ועדכונים חשובים.</p>
+          <form className="footer-subscribe-form" onSubmit={(event) => event.preventDefault()}>
+            <label htmlFor="updates-email" className="sr-only">כתובת אימייל</label>
+            <input id="updates-email" name="email" type="email" placeholder="name@email.com" required />
+            <button type="submit">הרשמה לעדכונים</button>
+          </form>
+        </div>
+
+        <div className="footer-block">
+          <h2>יצירת קשר</h2>
+          <p>נשמח לעזור לכם בכל שאלה.</p>
+          <ul className="contact-list">
+            <li><strong>טלפון:</strong> 03-555-1234</li>
+            <li><strong>אימייל:</strong> hello@shos.co.il</li>
+            <li><strong>וואטסאפ:</strong> 050-123-4567</li>
+          </ul>
+        </div>
+      </footer>
     </main>
+
   );
 };
 
