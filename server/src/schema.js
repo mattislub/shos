@@ -12,25 +12,33 @@ const DEFAULT_PRODUCT = {
   description:
     "נעל יומיומית קלה ונוחה במיוחד עם סוליה בולמת זעזועים, מתאימה לעבודה, הליכה ויציאות.",
   priceIls: 29900,
-  imageUrl:
-    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80",
-  ctaText: "אני רוצה להזמין"
+  ctaText: "אני רוצה להזמין",
+  defaultImage:
+    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
 };
 
 const initializeDatabaseStructure = async () => {
   await db.query(schema);
 
-  await db.query(
-    `INSERT INTO store_products (slug, title, description, price_ils, image_url, cta_text, is_active)
-     VALUES ($1, $2, $3, $4, $5, $6, true)`,
+  const productResult = await db.query(
+    `INSERT INTO store_products (slug, title, description, price_ils, cta_text, is_active)
+     VALUES ($1, $2, $3, $4, $5, true)
+     RETURNING id`,
     [
       DEFAULT_PRODUCT.slug,
       DEFAULT_PRODUCT.title,
       DEFAULT_PRODUCT.description,
       DEFAULT_PRODUCT.priceIls,
-      DEFAULT_PRODUCT.imageUrl,
       DEFAULT_PRODUCT.ctaText
     ]
+  );
+
+  const productId = productResult.rows[0].id;
+
+  await db.query(
+    `INSERT INTO store_product_images (product_id, image_url, sort_order)
+     VALUES ($1, $2, 0)`,
+    [productId, DEFAULT_PRODUCT.defaultImage]
   );
 };
 
