@@ -1,8 +1,12 @@
-# Shos
+# Shos - One Product Store
 
-Initial sketch for a sales site with React and a Node server, including a database bootstrap script.
+הפרויקט נבנה מחדש כ"חנות מוצר אחד בעמוד אחד":
 
-## How to run
+- `client/` — דף נחיתה יחיד עם טופס הזמנה קצר.
+- `server/` — API פשוט לשליפת המוצר ולשמירת הזמנה.
+- `server/db/schema.sql` — סכימה חדשה ופשוטה של `products` ו-`orders`.
+
+## הפעלה
 
 ```bash
 cd server
@@ -12,7 +16,7 @@ npm run db:init
 npm run dev
 ```
 
-In another terminal:
+בטרמינל נוסף:
 
 ```bash
 cd client
@@ -20,8 +24,7 @@ npm install
 npm run dev
 ```
 
-## Structure
+## API עיקרי
 
-- `server/` Express API + PostgreSQL.
-- `client/` React app (Vite).
-- `server/db/init.js` initializes the DB schema and seeds starter data.
+- `GET /api/product` — מחזיר את המוצר הפעיל היחיד.
+- `POST /api/orders` — יוצר הזמנה חדשה (שם, טלפון, כמות).
