@@ -40,6 +40,7 @@ body {
   border-radius: 18px;
   box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
   padding: 20px;
+  text-align: center;
 }
 
 .home-title {
@@ -69,6 +70,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  justify-content: center;
 }
 
 .home-actions button {
