@@ -1,10 +1,9 @@
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config();
 
-const db = require("../src/db");
+const db = require("./db");
 
-const schemaPath = path.join(__dirname, "schema.sql");
+const schemaPath = path.join(__dirname, "..", "db", "schema.sql");
 const schema = fs.readFileSync(schemaPath, "utf8");
 
 const DEFAULT_PRODUCT = {
@@ -18,11 +17,11 @@ const DEFAULT_PRODUCT = {
   ctaText: "אני רוצה להזמין"
 };
 
-const seedDatabase = async () => {
+const initializeDatabaseStructure = async () => {
   await db.query(schema);
 
   await db.query(
-    `INSERT INTO products (slug, title, description, price_ils, image_url, cta_text, active)
+    `INSERT INTO store_products (slug, title, description, price_ils, image_url, cta_text, is_active)
      VALUES ($1, $2, $3, $4, $5, $6, true)`,
     [
       DEFAULT_PRODUCT.slug,
@@ -35,14 +34,6 @@ const seedDatabase = async () => {
   );
 };
 
-seedDatabase()
-  .then(() => {
-    console.log("Database initialized with one-product store schema");
-  })
-  .catch((error) => {
-    console.error("Failed to initialize database", error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await db.end();
-  });
+module.exports = {
+  initializeDatabaseStructure
+};

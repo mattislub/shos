@@ -4,7 +4,7 @@
 
 - `client/` — דף נחיתה יחיד עם טופס הזמנה קצר.
 - `server/` — API פשוט לשליפת המוצר ולשמירת הזמנה.
-- `server/db/schema.sql` — סכימה חדשה ופשוטה של `products` ו-`orders`.
+- `server/db/schema.sql` — מבנה המסד החדש שמתעדכן בכל עליית שרת.
 
 ## הפעלה
 
@@ -12,9 +12,10 @@
 cd server
 npm install
 export DATABASE_URL=postgres://user:password@localhost:5432/shos
-npm run db:init
 npm run dev
 ```
+
+> בכל הפעלה מחדש של השרת, הסכימה הקיימת נמחקת ונבנית מחדש מתוך `server/db/schema.sql`.
 
 בטרמינל נוסף:
 
