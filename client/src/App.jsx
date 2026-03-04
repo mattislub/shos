@@ -169,11 +169,6 @@ const StorePage = () => {
   const currentProduct = normalizeProduct(product || fallbackProduct);
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
 
-  const totalLabel = useMemo(
-    () => formatIls(currentProduct.price_ils * quantity),
-    [currentProduct.price_ils, quantity]
-  );
-
   const quickActions = [
     { label: "צור קשר", icon: "📞" },
     { label: "אודות", icon: "ℹ️" },
@@ -228,7 +223,7 @@ const StorePage = () => {
         <h1>{currentProduct.title}</h1>
         <p>{currentProduct.description}</p>
 
-        <form onSubmit={proceedToNextStep} className="order-form">
+        <form onSubmit={submitOrder} className="order-form">
           <label className="color-picker-label">
             Color selection
             <select value={selectedColor} onChange={(event) => setSelectedColor(event.target.value)}>
