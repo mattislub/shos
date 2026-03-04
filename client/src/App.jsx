@@ -302,7 +302,12 @@ const StorePage = () => {
         </div>
       </section>
 
-      <footer className="site-footer" aria-label="עדכונים ויצירת קשר">
+     
+      <section className="card stacked-home-images" aria-label="Additional home images">
+        <img src="/uploads/abc.jpg" alt="Promotional image top" className="stacked-home-image" />
+        <img src="/uploads/dfg.jpg" alt="Promotional image bottom" className="stacked-home-image" />
+      </section>
+ <footer className="site-footer" aria-label="עדכונים ויצירת קשר">
         <div className="footer-block">
           <h2>הצטרפו לעדכונים</h2>
           <p>השאירו כתובת מייל וקבלו הטבות, מוצרים חדשים ועדכונים חשובים.</p>
@@ -324,6 +329,7 @@ const StorePage = () => {
         </div>
       </footer>
     </main>
+
   );
 };
 
