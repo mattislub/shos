@@ -207,6 +207,18 @@ h1 {
   color: #b45309;
 }
 
+
+.stacked-home-images {
+  display: grid;
+  gap: 12px;
+}
+
+.stacked-home-image {
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+  display: block;
+}
 .product-details-panel {
   border: 1px solid #e5e7eb;
   background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
