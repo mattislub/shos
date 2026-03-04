@@ -69,12 +69,30 @@ const saveBase64Image = (imagePayload) => {
 
   const mimeType = matches[1];
   const base64Data = matches[2];
-  const extension = mimeType.split("/")[1] || "bin";
+  if (!mimeType.startsWith("image/")) {
+    throw new Error(`Unsupported mime type: ${mimeType}`);
+  }
+
+  const mimeExtension = mimeType.split("/")[1] || "bin";
   const safeName = name.replace(/[^a-zA-Z0-9.-]/g, "_");
-  const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}.${extension}`;
+  const originalExtension = path.extname(safeName).replace(".", "").toLowerCase();
+
+  const extension = originalExtension || mimeExtension;
+  const finalName = originalExtension ? safeName : `${safeName}.${extension}`;
+  const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${finalName}`;
   const filePath = path.join(uploadsDir, filename);
 
   fs.writeFileSync(filePath, Buffer.from(base64Data, "base64"));
+
+  if (originalExtension && originalExtension !== mimeExtension) {
+    console.warn("[admin] image extension mismatch", {
+      originalName: name,
+      originalExtension,
+      mimeType,
+      mimeExtension,
+      savedFile: filename
+    });
+  }
 
   return `/uploads/${filename}`;
 };

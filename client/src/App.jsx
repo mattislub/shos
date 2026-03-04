@@ -206,12 +206,13 @@ const AdminPage = () => {
     console.info("[admin] image files selected", {
       count: files.length,
       names: files.map((file) => file.name),
-      sizes: files.map((file) => file.size)
+      sizes: files.map((file) => file.size),
+      inputMultipleEnabled: Boolean(event.target?.multiple)
     });
 
     if (files.length <= 1) {
       console.warn(
-        "[admin] multiple image upload diagnostic: browser reported one (or zero) file only. Check multi-select in file picker (Ctrl/Cmd click)."
+        "[admin] multiple image upload diagnostic: browser reported one (or zero) file only. If this keeps happening, verify platform supports multi-select (some mobile pickers don't) and pick multiple files in one selection."
       );
     }
 
