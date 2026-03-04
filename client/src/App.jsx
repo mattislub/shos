@@ -214,13 +214,15 @@ const StorePage = () => {
   return (
     <main className="page" dir="rtl">
       <header className="home-header">
+        <p className="home-eyebrow">SHOS STORE</p>
         <h1 className="home-title">ברוכים הבאים לחנות</h1>
+        <p className="home-subtitle">קולקציה מעודכנת, הזמנה מהירה וחוויית קנייה חלקה.</p>
         <nav className="home-actions" aria-label="פעולות ראשיות">
-          <button type="button">צור קשר</button>
-          <button type="button">אודות</button>
-          <button type="button">התחבר</button>
-          <button type="button">עגלה</button>
-          <button type="button">רשימת משאלות</button>
+          <button type="button"><span aria-hidden="true">📞</span> צור קשר</button>
+          <button type="button"><span aria-hidden="true">ℹ️</span> אודות</button>
+          <button type="button"><span aria-hidden="true">👤</span> התחבר</button>
+          <button type="button"><span aria-hidden="true">🛒</span> עגלה</button>
+          <button type="button"><span aria-hidden="true">💖</span> רשימת משאלות</button>
         </nav>
       </header>
 
