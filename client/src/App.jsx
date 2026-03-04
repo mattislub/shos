@@ -7,8 +7,14 @@ const fallbackProduct = {
   price_ils: 29900,
   image_url:
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80",
+  images: [
+    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
+  ],
   cta_text: "אני רוצה להזמין"
 };
+
+const apiUrl = "http://localhost:3001/api";
+const serverBaseUrl = "http://localhost:3001";
 
 const formatIls = (amount) =>
   new Intl.NumberFormat("he-IL", {
@@ -17,7 +23,32 @@ const formatIls = (amount) =>
     maximumFractionDigits: 0
   }).format(amount / 100);
 
-const apiUrl = "http://localhost:3001/api";
+const toAbsoluteImageUrl = (url) => {
+  if (!url) {
+    return "";
+  }
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+    return url;
+  }
+  return `${serverBaseUrl}${url}`;
+};
+
+const normalizeProduct = (product) => {
+  const base = product || fallbackProduct;
+  const rawImages = Array.isArray(base.images) && base.images.length > 0
+    ? base.images
+    : base.image_url
+      ? [base.image_url]
+      : [];
+
+  const images = rawImages.map(toAbsoluteImageUrl).filter(Boolean);
+
+  return {
+    ...base,
+    image_url: toAbsoluteImageUrl(base.image_url || images[0] || ""),
+    images
+  };
+};
 
 const useProduct = () => {
   const [product, setProduct] = useState(null);
@@ -30,20 +61,17 @@ const useProduct = () => {
     const loadProduct = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${apiUrl}/product`, {
-          signal: controller.signal
-        });
-
+        const response = await fetch(`${apiUrl}/product`, { signal: controller.signal });
         if (!response.ok) {
           throw new Error("Failed to load product");
         }
 
         const payload = await response.json();
-        setProduct(payload.product || fallbackProduct);
+        setProduct(normalizeProduct(payload.product || fallbackProduct));
       } catch (err) {
         if (err.name !== "AbortError") {
           setError("לא הצלחנו לטעון את הנתונים מהשרת. מוצגת תצוגת ברירת מחדל.");
-          setProduct(fallbackProduct);
+          setProduct(normalizeProduct(fallbackProduct));
         }
       } finally {
         setLoading(false);
@@ -51,7 +79,6 @@ const useProduct = () => {
     };
 
     loadProduct();
-
     return () => controller.abort();
   }, []);
 
@@ -64,11 +91,15 @@ const StorePage = () => {
   const [phone, setPhone] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [status, setStatus] = useState("");
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const totalLabel = useMemo(() => {
-    const data = product || fallbackProduct;
-    return formatIls(data.price_ils * quantity);
-  }, [product, quantity]);
+  const currentProduct = normalizeProduct(product || fallbackProduct);
+  const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
+
+  const totalLabel = useMemo(
+    () => formatIls(currentProduct.price_ils * quantity),
+    [currentProduct.price_ils, quantity]
+  );
 
   const submitOrder = async (event) => {
     event.preventDefault();
@@ -83,11 +114,7 @@ const StorePage = () => {
       const response = await fetch(`${apiUrl}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer_name: name.trim(),
-          phone: phone.trim(),
-          quantity
-        })
+        body: JSON.stringify({ customer_name: name.trim(), phone: phone.trim(), quantity })
       });
 
       if (!response.ok) {
@@ -103,39 +130,42 @@ const StorePage = () => {
     }
   };
 
-  const currentProduct = product || fallbackProduct;
-
   return (
     <main className="page" dir="rtl">
       <section className="card">
         {loading ? <p>טוען מוצר...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
 
-        <img src={currentProduct.image_url} alt={currentProduct.title} className="product-image" />
+        <img src={displayImage} alt={currentProduct.title} className="product-image" />
+
+        {currentProduct.images.length > 1 ? (
+          <div className="thumb-grid">
+            {currentProduct.images.map((image, index) => (
+              <button
+                key={`${image}-${index}`}
+                type="button"
+                className={`thumb ${selectedImageIndex === index ? "thumb-active" : ""}`}
+                onClick={() => setSelectedImageIndex(index)}
+              >
+                <img src={image} alt={`תמונה ${index + 1}`} />
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <h1>{currentProduct.title}</h1>
         <p>{currentProduct.description}</p>
-
         <p className="price">{formatIls(currentProduct.price_ils)}</p>
 
         <form onSubmit={submitOrder} className="order-form">
-          <input
-            placeholder="שם מלא"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <input
-            placeholder="טלפון"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-          />
+          <input placeholder="שם מלא" value={name} onChange={(event) => setName(event.target.value)} />
+          <input placeholder="טלפון" value={phone} onChange={(event) => setPhone(event.target.value)} />
           <input
             type="number"
             min="1"
             value={quantity}
             onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
           />
-
           <button type="submit">{currentProduct.cta_text}</button>
         </form>
 
@@ -152,31 +182,20 @@ const AdminPage = () => {
   const [description, setDescription] = useState("");
   const [priceIls, setPriceIls] = useState("");
   const [ctaText, setCtaText] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    const current = product || fallbackProduct;
+    const current = normalizeProduct(product || fallbackProduct);
     setTitle(current.title);
     setDescription(current.description);
     setPriceIls(String((current.price_ils || 0) / 100));
     setCtaText(current.cta_text);
-    setImageUrl(current.image_url);
   }, [product]);
 
-  const onFileSelected = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setImageUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+  const onFilesSelected = (event) => {
+    const files = Array.from(event.target.files || []);
+    setSelectedFiles(files);
   };
 
   const saveProduct = async (event) => {
@@ -190,6 +209,18 @@ const AdminPage = () => {
     }
 
     try {
+      const imagesPayload = await Promise.all(
+        selectedFiles.map(
+          (file) =>
+            new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve({ name: file.name, data: reader.result });
+              reader.onerror = () => reject(new Error("failed reading file"));
+              reader.readAsDataURL(file);
+            })
+        )
+      );
+
       const response = await fetch(`${apiUrl}/admin/product`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -198,7 +229,7 @@ const AdminPage = () => {
           description: description.trim(),
           price_ils: Math.round(parsedPrice * 100),
           cta_text: ctaText.trim(),
-          image_url: imageUrl.trim()
+          images: imagesPayload
         })
       });
 
@@ -207,14 +238,15 @@ const AdminPage = () => {
       }
 
       const payload = await response.json();
-      setProduct(payload.product);
+      setProduct(normalizeProduct(payload.product));
+      setSelectedFiles([]);
       setStatus("המוצר נשמר בהצלחה.");
     } catch (_err) {
       setStatus("שמירת המוצר נכשלה.");
     }
   };
 
-  const previewProduct = product || fallbackProduct;
+  const previewProduct = normalizeProduct(product || fallbackProduct);
 
   return (
     <main className="page" dir="rtl">
@@ -240,14 +272,26 @@ const AdminPage = () => {
             placeholder="מחיר בש״ח"
           />
           <input value={ctaText} onChange={(event) => setCtaText(event.target.value)} placeholder="טקסט כפתור" />
-          <input value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="קישור תמונה" />
-          <input type="file" accept="image/*" onChange={onFileSelected} />
+          <label className="file-label">
+            העלאת תמונות מוצר (אפשר לבחור כמה קבצים)
+            <input type="file" accept="image/*" multiple onChange={onFilesSelected} />
+          </label>
+          {selectedFiles.length > 0 ? (
+            <p className="status">נבחרו {selectedFiles.length} קבצים להעלאה.</p>
+          ) : null}
 
           <button type="submit">שמור מוצר</button>
         </form>
 
-        <h2>תצוגה מקדימה</h2>
-        <img src={imageUrl || previewProduct.image_url} alt={title || previewProduct.title} className="product-image" />
+        <h2>תמונות פעילות</h2>
+        <div className="thumb-grid">
+          {previewProduct.images.map((image, index) => (
+            <div key={`${image}-${index}`} className="thumb thumb-static">
+              <img src={image} alt={`תמונת מוצר ${index + 1}`} />
+            </div>
+          ))}
+        </div>
+
         {status ? <p className="status">{status}</p> : null}
       </section>
     </main>
@@ -256,7 +300,6 @@ const AdminPage = () => {
 
 function App() {
   const isAdminPage = window.location.pathname === "/admin";
-
   return isAdminPage ? <AdminPage /> : <StorePage />;
 }
 

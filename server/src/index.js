@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 require("dotenv").config();
 
 const db = require("./db");
@@ -8,36 +10,84 @@ const { initializeDatabaseStructure } = require("./schema");
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
+const uploadsDir = path.join(__dirname, "..", "uploads");
+fs.mkdirSync(uploadsDir, { recursive: true });
 
-const toProductResponse = (row) => ({
-  id: row.id,
-  slug: row.slug,
-  title: row.title,
-  description: row.description,
-  price_ils: row.price_ils,
-  image_url: row.image_url,
-  cta_text: row.cta_text
-});
+app.use(cors());
+app.use(express.json({ limit: "25mb" }));
+app.use("/uploads", express.static(uploadsDir));
+
+const mapProductWithImages = (row, imageRows) => {
+  const images = imageRows.map((image) => image.image_url);
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    price_ils: row.price_ils,
+    cta_text: row.cta_text,
+    image_url: images[0] || "",
+    images
+  };
+};
+
+const loadActiveProduct = async () => {
+  const productResult = await db.query(
+    `SELECT id, slug, title, description, price_ils, cta_text
+     FROM store_products
+     WHERE is_active = true
+     ORDER BY id
+     LIMIT 1`
+  );
+
+  const product = productResult.rows[0];
+  if (!product) {
+    return null;
+  }
+
+  const imagesResult = await db.query(
+    `SELECT image_url
+     FROM store_product_images
+     WHERE product_id = $1
+     ORDER BY sort_order, id`,
+    [product.id]
+  );
+
+  return mapProductWithImages(product, imagesResult.rows);
+};
+
+const saveBase64Image = (imagePayload) => {
+  const { name, data } = imagePayload || {};
+  if (!name || !data || typeof name !== "string" || typeof data !== "string") {
+    throw new Error("Invalid image payload");
+  }
+
+  const matches = data.match(/^data:(.+);base64,(.+)$/);
+  if (!matches) {
+    throw new Error("Invalid image data format");
+  }
+
+  const mimeType = matches[1];
+  const base64Data = matches[2];
+  const extension = mimeType.split("/")[1] || "bin";
+  const safeName = name.replace(/[^a-zA-Z0-9.-]/g, "_");
+  const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}.${extension}`;
+  const filePath = path.join(uploadsDir, filename);
+
+  fs.writeFileSync(filePath, Buffer.from(base64Data, "base64"));
+
+  return `/uploads/${filename}`;
+};
 
 app.get("/api/product", async (_req, res) => {
   try {
-    const result = await db.query(
-      `SELECT id, slug, title, description, price_ils, image_url, cta_text
-       FROM store_products
-       WHERE is_active = true
-       ORDER BY id
-       LIMIT 1`
-    );
-
-    const product = result.rows[0];
+    const product = await loadActiveProduct();
 
     if (!product) {
       return res.status(404).json({ message: "No active product found" });
     }
 
-    return res.json({ product: toProductResponse(product) });
+    return res.json({ product });
   } catch (error) {
     console.error("Failed to fetch active product", error);
     return res.status(500).json({ message: "Failed to load product" });
@@ -80,17 +130,20 @@ app.post("/api/orders", async (req, res) => {
   }
 });
 
-
 app.put("/api/admin/product", async (req, res) => {
-  const { title, description, price_ils, image_url, cta_text } = req.body || {};
+  const { title, description, price_ils, cta_text, images } = req.body || {};
 
-  if (!title || !description || !image_url || !cta_text) {
-    return res.status(400).json({ message: "title, description, image_url and cta_text are required" });
+  if (!title || !description || !cta_text) {
+    return res.status(400).json({ message: "title, description and cta_text are required" });
   }
 
   const parsedPrice = Number(price_ils);
   if (!Number.isInteger(parsedPrice) || parsedPrice < 0) {
     return res.status(400).json({ message: "price_ils must be a non-negative integer" });
+  }
+
+  if (images && !Array.isArray(images)) {
+    return res.status(400).json({ message: "images must be an array" });
   }
 
   try {
@@ -103,32 +156,38 @@ app.put("/api/admin/product", async (req, res) => {
       return res.status(404).json({ message: "No active product found" });
     }
 
-    const updatedResult = await db.query(
+    await db.query(
       `UPDATE store_products
        SET title = $1,
            description = $2,
            price_ils = $3,
-           image_url = $4,
-           cta_text = $5,
+           cta_text = $4,
            updated_at = NOW()
-       WHERE id = $6
-       RETURNING id, slug, title, description, price_ils, image_url, cta_text`,
-      [
-        String(title).trim(),
-        String(description).trim(),
-        parsedPrice,
-        String(image_url).trim(),
-        String(cta_text).trim(),
-        product.id
-      ]
+       WHERE id = $5`,
+      [String(title).trim(), String(description).trim(), parsedPrice, String(cta_text).trim(), product.id]
     );
 
-    return res.json({ product: toProductResponse(updatedResult.rows[0]) });
+    if (Array.isArray(images) && images.length > 0) {
+      const imageUrls = images.map(saveBase64Image);
+
+      await db.query("DELETE FROM store_product_images WHERE product_id = $1", [product.id]);
+      for (const [index, imageUrl] of imageUrls.entries()) {
+        await db.query(
+          `INSERT INTO store_product_images (product_id, image_url, sort_order)
+           VALUES ($1, $2, $3)`,
+          [product.id, imageUrl, index]
+        );
+      }
+    }
+
+    const updatedProduct = await loadActiveProduct();
+    return res.json({ product: updatedProduct });
   } catch (error) {
     console.error("Failed to update product", error);
     return res.status(500).json({ message: "Failed to update product" });
   }
 });
+
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
