@@ -306,24 +306,24 @@ const StorePage = () => {
         <img src="/uploads/abc.jpg" alt="Promotional image top" className="stacked-home-image" />
         <img src="/uploads/dfg.jpg" alt="Promotional image bottom" className="stacked-home-image" />
       </section>
- <footer className="site-footer" aria-label="עדכונים ויצירת קשר">
+ <footer className="site-footer" aria-label="Updates and contact">
         <div className="footer-block">
-          <h2>הצטרפו לעדכונים</h2>
-          <p>השאירו כתובת מייל וקבלו הטבות, מוצרים חדשים ועדכונים חשובים.</p>
+          <h2>Join our updates</h2>
+          <p>Leave your email address to get perks, new products, and important updates.</p>
           <form className="footer-subscribe-form" onSubmit={(event) => event.preventDefault()}>
-            <label htmlFor="updates-email" className="sr-only">כתובת אימייל</label>
+            <label htmlFor="updates-email" className="sr-only">Email address</label>
             <input id="updates-email" name="email" type="email" placeholder="name@email.com" required />
-            <button type="submit">הרשמה לעדכונים</button>
+            <button type="submit">Subscribe for updates</button>
           </form>
         </div>
 
         <div className="footer-block">
-          <h2>יצירת קשר</h2>
-          <p>נשמח לעזור לכם בכל שאלה.</p>
+          <h2>Contact us</h2>
+          <p>We will be happy to help with any question.</p>
           <ul className="contact-list">
-            <li><strong>טלפון:</strong> 03-555-1234</li>
-            <li><strong>אימייל:</strong> hello@shos.co.il</li>
-            <li><strong>וואטסאפ:</strong> 050-123-4567</li>
+            <li><strong>Phone:</strong> 03-555-1234</li>
+            <li><strong>Email:</strong> hello@shos.co.il</li>
+            <li><strong>WhatsApp:</strong> 050-123-4567</li>
           </ul>
         </div>
       </footer>
