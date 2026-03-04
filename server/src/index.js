@@ -220,17 +220,25 @@ app.put("/api/admin/product", async (req, res) => {
     return res.status(400).json({ message: "images must be an array" });
   }
 
+  const dbClient = await db.connect();
+  let isTransactionOpen = false;
+
   try {
-    const productResult = await db.query(
+    await dbClient.query("BEGIN");
+    isTransactionOpen = true;
+
+    const productResult = await dbClient.query(
       "SELECT id FROM store_products WHERE is_active = true ORDER BY id LIMIT 1"
     );
 
     const product = productResult.rows[0];
     if (!product) {
+      await dbClient.query("ROLLBACK");
+      isTransactionOpen = false;
       return res.status(404).json({ message: "No active product found" });
     }
 
-    await db.query(
+    await dbClient.query(
       `UPDATE store_products
        SET title = $1,
            description = $2,
@@ -254,15 +262,18 @@ app.put("/api/admin/product", async (req, res) => {
         imageUrls
       });
 
-      await db.query("DELETE FROM store_product_images WHERE product_id = $1", [product.id]);
+      await dbClient.query("DELETE FROM store_product_images WHERE product_id = $1", [product.id]);
       for (const [index, imageUrl] of imageUrls.entries()) {
-        await db.query(
+        await dbClient.query(
           `INSERT INTO store_product_images (product_id, image_url, sort_order)
            VALUES ($1, $2, $3)`,
           [product.id, imageUrl, index]
         );
       }
     }
+
+    await dbClient.query("COMMIT");
+    isTransactionOpen = false;
 
     const updatedProduct = await loadActiveProduct();
     console.info("[admin] update product response summary", {
@@ -284,8 +295,13 @@ app.put("/api/admin/product", async (req, res) => {
 
     return res.json({ product: updatedProduct });
   } catch (error) {
+    if (isTransactionOpen) {
+      await dbClient.query("ROLLBACK");
+    }
     console.error("Failed to update product", error);
     return res.status(500).json({ message: "Failed to update product" });
+  } finally {
+    dbClient.release();
   }
 });
 
