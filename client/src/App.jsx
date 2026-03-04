@@ -30,6 +30,73 @@ const formatIls = (amount) =>
     maximumFractionDigits: 0
   }).format(amount / 100);
 
+const MAX_UPLOAD_EDGE_PX = 1600;
+const MAX_UPLOAD_BYTES = 900 * 1024;
+const JPEG_QUALITY_STEPS = [0.85, 0.75, 0.65, 0.55, 0.45];
+
+const readFileAsDataUrl =
+  (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("failed reading file"));
+      reader.readAsDataURL(file);
+    });
+
+const loadImageElement =
+  (source) =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("failed decoding image"));
+      image.src = source;
+    });
+
+const dataUrlToBytes = (dataUrl) => {
+  const encoded = dataUrl.split(",")[1] || "";
+  return Math.ceil((encoded.length * 3) / 4);
+};
+
+const compressImageForUpload = async (file) => {
+  if (!file.type.startsWith("image/")) {
+    return { name: file.name, data: await readFileAsDataUrl(file), compressed: false };
+  }
+
+  const sourceDataUrl = await readFileAsDataUrl(file);
+  const image = await loadImageElement(sourceDataUrl);
+
+  const longestEdge = Math.max(image.width, image.height);
+  const scale = longestEdge > MAX_UPLOAD_EDGE_PX ? MAX_UPLOAD_EDGE_PX / longestEdge : 1;
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return { name: file.name, data: sourceDataUrl, compressed: false };
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+
+  let bestDataUrl = sourceDataUrl;
+  for (const quality of JPEG_QUALITY_STEPS) {
+    const candidate = canvas.toDataURL("image/jpeg", quality);
+    bestDataUrl = candidate;
+    if (dataUrlToBytes(candidate) <= MAX_UPLOAD_BYTES) {
+      break;
+    }
+  }
+
+  return {
+    name: file.name.replace(/\.[^.]+$/, "") + ".jpg",
+    data: bestDataUrl,
+    compressed: bestDataUrl !== sourceDataUrl
+  };
+};
+
 const toAbsoluteImageUrl = (url) => {
   if (!url) {
     return "";
@@ -235,22 +302,23 @@ const AdminPage = () => {
         selectedFileNames: selectedFiles.map((file) => file.name)
       });
 
-      const imagesPayload = await Promise.all(
-        selectedFiles.map(
-          (file) =>
-            new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve({ name: file.name, data: reader.result });
-              reader.onerror = () => reject(new Error("failed reading file"));
-              reader.readAsDataURL(file);
-            })
-        )
-      );
+      const imagesPayload = await Promise.all(selectedFiles.map((file) => compressImageForUpload(file)));
+
+      const oversizedImages = imagesPayload.filter((image) => dataUrlToBytes(image.data) > MAX_UPLOAD_BYTES);
+      if (oversizedImages.length > 0) {
+        console.warn("[admin] some images are still large after compression", {
+          imageNames: oversizedImages.map((image) => image.name),
+          maxExpectedBytes: MAX_UPLOAD_BYTES
+        });
+      }
 
       console.info("[admin] image payload ready", {
         payloadCount: imagesPayload.length,
-        totalPayloadSize: imagesPayload.reduce((sum, image) => sum + (image?.data?.length || 0), 0)
+        totalPayloadSize: imagesPayload.reduce((sum, image) => sum + dataUrlToBytes(image?.data || ""), 0),
+        compressedCount: imagesPayload.filter((image) => image.compressed).length
       });
+
+      const requestImages = imagesPayload.map(({ name, data }) => ({ name, data }));
 
       const response = await fetch(`${apiUrl}/admin/product`, {
         method: "PUT",
@@ -260,7 +328,7 @@ const AdminPage = () => {
           description: description.trim(),
           price_ils: Math.round(parsedPrice * 100),
           cta_text: ctaText.trim(),
-          images: imagesPayload
+          images: requestImages
         })
       });
 
