@@ -127,6 +127,7 @@ body {
   padding: 0;
   overflow: hidden;
   background: #fff;
+  display: grid;
 }
 
 .thumb img {
@@ -138,6 +139,12 @@ body {
 
 .thumb-active {
   border-color: #f97316;
+}
+
+.thumb span {
+  padding: 8px;
+  font-size: 13px;
+  color: #374151;
 }
 
 .thumb-static {
@@ -176,13 +183,6 @@ h1 {
 }
 
 .file-label {
-  font-size: 14px;
-  color: #374151;
-  display: grid;
-  gap: 6px;
-}
-
-.color-picker-label {
   font-size: 14px;
   color: #374151;
   display: grid;

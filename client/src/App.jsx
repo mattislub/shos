@@ -10,6 +10,13 @@ const fallbackProduct = {
   images: [
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
   ],
+  image_entries: [
+    {
+      image_url:
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80",
+      color_name: "Blue"
+    }
+  ],
   cta_text: "Order now"
 };
 
@@ -105,18 +112,34 @@ const toAbsoluteImageUrl = (url) => {
 
 const normalizeProduct = (product) => {
   const base = product || fallbackProduct;
-  const rawImages = Array.isArray(base.images) && base.images.length > 0
-    ? base.images
-    : base.image_url
-      ? [base.image_url]
-      : [];
+  const rawImageEntries = Array.isArray(base.image_entries) && base.image_entries.length > 0
+    ? base.image_entries
+    : Array.isArray(base.images) && base.images.length > 0
+      ? base.images.map((imageUrl) => ({ image_url: imageUrl, color_name: "" }))
+      : base.image_url
+        ? [{ image_url: base.image_url, color_name: "" }]
+        : [];
 
-  const images = rawImages.map(toAbsoluteImageUrl).filter(Boolean);
+  const imageEntries = rawImageEntries
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return { image_url: toAbsoluteImageUrl(entry), color_name: "" };
+      }
+
+      return {
+        image_url: toAbsoluteImageUrl(entry?.image_url || ""),
+        color_name: String(entry?.color_name || "").trim()
+      };
+    })
+    .filter((entry) => Boolean(entry.image_url));
+
+  const images = imageEntries.map((entry) => entry.image_url);
 
   return {
     ...base,
     image_url: toAbsoluteImageUrl(base.image_url || images[0] || ""),
-    images
+    images,
+    image_entries: imageEntries
   };
 };
 
@@ -161,13 +184,12 @@ const useProduct = () => {
 
 const StorePage = () => {
   const { product, homeHeroImageUrl, loading, error } = useProduct();
-  const colorOptions = ["Black", "White", "Gray", "Blue"];
-  const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
   const [status, setStatus] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const currentProduct = normalizeProduct(product || fallbackProduct);
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
+  const selectedImageColor = currentProduct.image_entries[selectedImageIndex]?.color_name || "";
 
   const quickActions = [
     { label: "צור קשר", icon: "📞" },
@@ -179,7 +201,7 @@ const StorePage = () => {
 
   const submitOrder = async (event) => {
     event.preventDefault();
-    setStatus(`Selected color: ${selectedColor}. You can continue to the next step.`);
+    setStatus("You can continue to the next step.");
   };
 
   return (
@@ -215,25 +237,20 @@ const StorePage = () => {
                 onClick={() => setSelectedImageIndex(index)}
               >
                 <img src={image} alt={`Image ${index + 1}`} />
+                {currentProduct.image_entries[index]?.color_name ? (
+                  <span>{currentProduct.image_entries[index].color_name}</span>
+                ) : null}
               </button>
             ))}
           </div>
         ) : null}
 
+        {selectedImageColor ? <p className="status">Selected color: {selectedImageColor}</p> : null}
+
         <h1>{currentProduct.title}</h1>
         <p>{currentProduct.description}</p>
 
         <form onSubmit={submitOrder} className="order-form">
-          <label className="color-picker-label">
-            Color selection
-            <select value={selectedColor} onChange={(event) => setSelectedColor(event.target.value)}>
-              {colorOptions.map((color) => (
-                <option key={color} value={color}>
-                  {color}
-                </option>
-              ))}
-            </select>
-          </label>
           <button type="submit">Continue</button>
         </form>
 
@@ -295,6 +312,7 @@ const AdminPage = () => {
   const [priceIls, setPriceIls] = useState("");
   const [ctaText, setCtaText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [imageColors, setImageColors] = useState({});
   const [activeTab, setActiveTab] = useState("product");
   const [heroFile, setHeroFile] = useState(null);
   const [status, setStatus] = useState("");
@@ -324,7 +342,17 @@ const AdminPage = () => {
     }
 
     setSelectedFiles(files);
+    setImageColors((current) => {
+      const next = {};
+      files.forEach((file) => {
+        const key = `${file.name}-${file.lastModified}-${file.size}`;
+        next[key] = current[key] || "";
+      });
+      return next;
+    });
   };
+
+  const fileKey = (file) => `${file.name}-${file.lastModified}-${file.size}`;
 
   const saveProduct = async (event) => {
     event.preventDefault();
@@ -342,6 +370,12 @@ const AdminPage = () => {
         selectedFileNames: selectedFiles.map((file) => file.name)
       });
 
+      const missingColor = selectedFiles.find((file) => !String(imageColors[fileKey(file)] || "").trim());
+      if (missingColor) {
+        setStatus("Please select a color for every uploaded image.");
+        return;
+      }
+
       const imagesPayload = await Promise.all(selectedFiles.map((file) => compressImageForUpload(file)));
 
       const oversizedImages = imagesPayload.filter((image) => dataUrlToBytes(image.data) > MAX_UPLOAD_BYTES);
@@ -358,7 +392,11 @@ const AdminPage = () => {
         compressedCount: imagesPayload.filter((image) => image.compressed).length
       });
 
-      const requestImages = imagesPayload.map(({ name, data }) => ({ name, data }));
+      const requestImages = imagesPayload.map(({ name, data }, index) => ({
+        name,
+        data,
+        color_name: String(imageColors[fileKey(selectedFiles[index])] || "").trim()
+      }));
 
       const response = await fetch(`${apiUrl}/admin/product`, {
         method: "PUT",
@@ -403,6 +441,7 @@ const AdminPage = () => {
 
       setProduct(normalizeProduct(payload.product));
       setSelectedFiles([]);
+      setImageColors({});
       setStatus("Product saved successfully.");
     } catch (err) {
       console.error("[admin] product save exception", {
@@ -502,7 +541,25 @@ const AdminPage = () => {
                 <input type="file" accept="image/*" multiple onChange={onFilesSelected} />
               </label>
               {selectedFiles.length > 0 ? (
-                <p className="status">{selectedFiles.length} files selected for upload.</p>
+                <>
+                  <p className="status">{selectedFiles.length} files selected for upload.</p>
+                  {selectedFiles.map((file) => {
+                    const key = fileKey(file);
+                    return (
+                      <label key={key} className="file-label">
+                        Color for {file.name}
+                        <input
+                          value={imageColors[key] || ""}
+                          onChange={(event) => setImageColors((current) => ({
+                            ...current,
+                            [key]: event.target.value
+                          }))}
+                          placeholder="e.g. Black"
+                        />
+                      </label>
+                    );
+                  })}
+                </>
               ) : null}
 
               <button type="submit">Save product</button>
@@ -513,6 +570,9 @@ const AdminPage = () => {
               {previewProduct.images.map((image, index) => (
                 <div key={`${image}-${index}`} className="thumb thumb-static">
                   <img src={image} alt={`Product image ${index + 1}`} />
+                  {previewProduct.image_entries[index]?.color_name ? (
+                    <span>{previewProduct.image_entries[index].color_name}</span>
+                  ) : null}
                 </div>
               ))}
             </div>
