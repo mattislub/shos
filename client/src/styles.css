@@ -1,5 +1,5 @@
 :root {
-  font-family: "Heebo", "Arial", sans-serif;
+  font-family: "Inter", "Arial", sans-serif;
   color: #111827;
   background: #f3f4f6;
   --content-max-width: 960px;
@@ -167,6 +167,58 @@ h1 {
 
 .warning {
   color: #b45309;
+}
+
+.product-details-panel {
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.details-header {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.rating {
+  margin: 0;
+  font-weight: 700;
+}
+
+.availability {
+  margin: 6px 0 0;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.stock-note {
+  margin: 4px 0 0;
+  color: #334155;
+}
+
+.details-list {
+  margin: 8px 0 14px;
+  padding-left: 22px;
+  display: grid;
+  gap: 8px;
+  color: #1f2937;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+
+.details-grid p {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
 }
 
 .admin-tabs {
