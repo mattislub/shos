@@ -2,6 +2,7 @@
   font-family: "Heebo", "Arial", sans-serif;
   color: #111827;
   background: #f3f4f6;
+  --content-max-width: 960px;
 }
 
 * {
@@ -21,8 +22,13 @@ body {
   gap: 16px;
 }
 
+.card,
+.home-header,
+.hero-banner {
+  width: min(var(--content-max-width), 100%);
+}
+
 .card {
-  width: min(560px, 100%);
   background: #ffffff;
   border-radius: 18px;
   box-shadow: 0 12px 34px rgba(15, 23, 42, 0.1);
@@ -30,7 +36,6 @@ body {
 }
 
 .home-header {
-  width: min(960px, 100%);
   background: #ffffff;
   border-radius: 18px;
   box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
@@ -54,10 +59,6 @@ body {
   padding: 8px 14px;
   font-size: 14px;
   cursor: pointer;
-}
-
-.hero-banner {
-  width: min(960px, 100%);
 }
 
 .hero-banner-image {
@@ -164,6 +165,7 @@ h1 {
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .tab-button {
@@ -179,4 +181,48 @@ h1 {
   background: #f97316;
   color: #fff;
   border-color: #f97316;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .card,
+  .home-header {
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .home-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-actions button {
+    width: 100%;
+    border-radius: 10px;
+  }
+
+  .hero-banner-image,
+  .product-image {
+    height: 180px;
+    border-radius: 12px;
+  }
+
+  .price {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-banner-image,
+  .product-image {
+    height: 150px;
+  }
 }
