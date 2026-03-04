@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 
 const fallbackProduct = {
-  title: "סניקרס Horizon X",
+  title: "Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women",
   description:
-    "נעל יומיומית קלה ונוחה במיוחד עם סוליה בולמת זעזועים, מתאימה לעבודה, הליכה ויציאות.",
+    "Water-resistant everyday loafers that are lightweight, odor-resistant, and built for all-day comfort.",
   price_ils: 29900,
   image_url:
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80",
   images: [
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
   ],
-  cta_text: "אני רוצה להזמין"
+  cta_text: "Order now"
 };
 
 const fallbackHomeHeroImage =
@@ -143,7 +143,7 @@ const useProduct = () => {
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error("Product update from server failed:", err);
-          setError("לא הצלחנו לטעון את הנתונים מהשרת. מוצגת תצוגת ברירת מחדל.");
+          setError("We couldn't load the product data from the server. Showing fallback content.");
           setProduct(normalizeProduct(fallbackProduct));
           setHomeHeroImageUrl(fallbackHomeHeroImage);
         }
@@ -161,7 +161,7 @@ const useProduct = () => {
 
 const StorePage = () => {
   const { product, homeHeroImageUrl, loading, error } = useProduct();
-  const colorOptions = ["שחור", "לבן", "אפור", "כחול"];
+  const colorOptions = ["Black", "White", "Gray", "Blue"];
   const [selectedColor, setSelectedColor] = useState(colorOptions[0]);
   const [status, setStatus] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -184,33 +184,28 @@ const StorePage = () => {
 
   const submitOrder = async (event) => {
     event.preventDefault();
-    setStatus(`הצבע שנבחר: ${selectedColor}. אפשר להמשיך לשלב הבא.`);
+    setStatus(`Selected color: ${selectedColor}. You can continue to the next step.`);
   };
 
   return (
-    <main className="page" dir="rtl">
+    <main className="page">
       <header className="home-header">
-        <div className="home-title-wrap">
-          <p className="home-eyebrow">קולקציה חדשה 2026</p>
-          <h1 className="home-title">ברוכים הבאים לחנות</h1>
-          <p className="home-subtitle">מוצרים נבחרים, משלוח מהיר וחווית קנייה פשוטה.</p>
-        </div>
-        <nav className="home-actions" aria-label="פעולות ראשיות">
-          {quickActions.map((action) => (
-            <button key={action.label} type="button" className="home-action-button">
-              <span className="home-action-icon" aria-hidden="true">{action.icon}</span>
-              <span>{action.label}</span>
-            </button>
-          ))}
+        <h1 className="home-title">Welcome to the store</h1>
+        <nav className="home-actions" aria-label="Main actions">
+          <button type="button">Contact</button>
+          <button type="button">About</button>
+          <button type="button">Sign in</button>
+          <button type="button">Cart</button>
+          <button type="button">Wishlist</button>
         </nav>
       </header>
 
       <section className="hero-banner">
-        <img src={homeHeroImageUrl} alt="באנר ראשי" className="hero-banner-image" />
+        <img src={homeHeroImageUrl} alt="Main banner" className="hero-banner-image" />
       </section>
 
       <section className="card">
-        {loading ? <p>טוען מוצר...</p> : null}
+        {loading ? <p>Loading product...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
 
         <img src={displayImage} alt={currentProduct.title} className="product-image" />
@@ -224,7 +219,7 @@ const StorePage = () => {
                 className={`thumb ${selectedImageIndex === index ? "thumb-active" : ""}`}
                 onClick={() => setSelectedImageIndex(index)}
               >
-                <img src={image} alt={`תמונה ${index + 1}`} />
+                <img src={image} alt={`Image ${index + 1}`} />
               </button>
             ))}
           </div>
@@ -235,7 +230,7 @@ const StorePage = () => {
 
         <form onSubmit={proceedToNextStep} className="order-form">
           <label className="color-picker-label">
-            בחירת צבע
+            Color selection
             <select value={selectedColor} onChange={(event) => setSelectedColor(event.target.value)}>
               {colorOptions.map((color) => (
                 <option key={color} value={color}>
@@ -244,10 +239,57 @@ const StorePage = () => {
               ))}
             </select>
           </label>
-          <button type="submit">המשך</button>
+          <button type="submit">Continue</button>
         </form>
 
         {status ? <p className="status">{status}</p> : null}
+      </section>
+
+      <section className="card product-details-panel" aria-labelledby="product-details-title">
+        <div className="details-header">
+          <p className="rating">⭐ 5.0 5.0 out of 5 stars (1)</p>
+          <p className="availability">Currently unavailable.</p>
+          <p className="stock-note">We don't know when or if this item will be back in stock.</p>
+        </div>
+
+        <h2 id="product-details-title">Product details</h2>
+
+        <h3>Top highlights</h3>
+        <ul className="details-list">
+          <li><strong>Sole material:</strong> Polyvinyl Chloride, Rubber</li>
+          <li><strong>Outer material:</strong> Polyvinyl Chloride (PVC)</li>
+          <li><strong>Closure type:</strong> No-closure</li>
+          <li><strong>Water resistance level:</strong> Water Resistant</li>
+        </ul>
+
+        <h3>About this item</h3>
+        <ul className="details-list">
+          <li>Resistant to odors, a breeze to clean, and dries rapidly.</li>
+          <li>Features a footbed with massage pods and improved arch support.</li>
+          <li>Designed to be water-friendly and buoyant.</li>
+          <li>
+            Equipped with scuff-resistant soles and segmented traction, making them perfect for
+            slippery and wet environments.
+          </li>
+        </ul>
+
+        <h3>Style</h3>
+        <div className="details-grid">
+          <p><strong>Color:</strong> Blue</p>
+          <p><strong>Heel Type:</strong> Flat</p>
+          <p><strong>Toe Style:</strong> Round Toe</p>
+          <p><strong>Style Name:</strong> Casual</p>
+          <p><strong>Pattern:</strong> Solid</p>
+          <p><strong>Subject Character:</strong> Barbie</p>
+          <p><strong>Seasons:</strong> All</p>
+        </div>
+
+        <h3>Features &amp; Specs</h3>
+        <div className="details-grid">
+          <p><strong>Closure Type:</strong> no-closure</p>
+          <p><strong>Sport Type:</strong> Walking</p>
+          <p><strong>Water Resistance Level:</strong> Water Resistant</p>
+        </div>
       </section>
     </main>
   );
@@ -297,7 +339,7 @@ const AdminPage = () => {
 
     const parsedPrice = Number(priceIls);
     if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
-      setStatus("מחיר לא תקין.");
+      setStatus("Invalid price.");
       return;
     }
 
@@ -368,13 +410,13 @@ const AdminPage = () => {
 
       setProduct(normalizeProduct(payload.product));
       setSelectedFiles([]);
-      setStatus("המוצר נשמר בהצלחה.");
+      setStatus("Product saved successfully.");
     } catch (err) {
       console.error("[admin] product save exception", {
         message: err?.message,
         stack: err?.stack
       });
-      setStatus("שמירת המוצר נכשלה.");
+      setStatus("Saving product failed.");
     }
   };
 
@@ -385,7 +427,7 @@ const AdminPage = () => {
     setHeroStatus("");
 
     if (!heroFile) {
-      setHeroStatus("נא לבחור תמונה לפני שמירה.");
+      setHeroStatus("Please choose an image before saving.");
       return;
     }
 
@@ -409,20 +451,20 @@ const AdminPage = () => {
       const payload = await response.json();
       setHomeHeroImageUrl(toAbsoluteImageUrl(payload.home_hero_image_url || ""));
       setHeroFile(null);
-      setHeroStatus("תמונת הבאנר נשמרה בהצלחה.");
+      setHeroStatus("Banner image saved successfully.");
     } catch (_error) {
-      setHeroStatus("שמירת תמונת הבאנר נכשלה.");
+      setHeroStatus("Saving banner image failed.");
     }
   };
 
   return (
-    <main className="page" dir="rtl">
+    <main className="page">
       <section className="card">
-        <h1>ניהול מוצר</h1>
-        {loading ? <p>טוען מוצר...</p> : null}
+        <h1>Product management</h1>
+        {loading ? <p>Loading product...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
 
-        <div className="admin-tabs" role="tablist" aria-label="לשוניות ניהול">
+        <div className="admin-tabs" role="tablist" aria-label="Management tabs">
           <button
             type="button"
             role="tab"
@@ -430,7 +472,7 @@ const AdminPage = () => {
             className={`tab-button ${activeTab === "product" ? "tab-button-active" : ""}`}
             onClick={() => setActiveTab("product")}
           >
-            מוצר
+            Product
           </button>
           <button
             type="button"
@@ -439,19 +481,19 @@ const AdminPage = () => {
             className={`tab-button ${activeTab === "hero" ? "tab-button-active" : ""}`}
             onClick={() => setActiveTab("hero")}
           >
-            תמונת באנר בית
+            Home banner image
           </button>
         </div>
 
         {activeTab === "product" ? (
           <>
             <form onSubmit={saveProduct} className="order-form">
-              <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="כותרת" />
+              <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title" />
               <textarea
                 className="admin-textarea"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="תיאור"
+                placeholder="Description"
               />
               <input
                 type="number"
@@ -459,25 +501,25 @@ const AdminPage = () => {
                 step="0.01"
                 value={priceIls}
                 onChange={(event) => setPriceIls(event.target.value)}
-                placeholder="מחיר בש״ח"
+                placeholder="Price in ILS"
               />
-              <input value={ctaText} onChange={(event) => setCtaText(event.target.value)} placeholder="טקסט כפתור" />
+              <input value={ctaText} onChange={(event) => setCtaText(event.target.value)} placeholder="Button text" />
               <label className="file-label">
-                העלאת תמונות מוצר (אפשר לבחור כמה קבצים)
+                Upload product images (you can choose multiple files)
                 <input type="file" accept="image/*" multiple onChange={onFilesSelected} />
               </label>
               {selectedFiles.length > 0 ? (
-                <p className="status">נבחרו {selectedFiles.length} קבצים להעלאה.</p>
+                <p className="status">{selectedFiles.length} files selected for upload.</p>
               ) : null}
 
-              <button type="submit">שמור מוצר</button>
+              <button type="submit">Save product</button>
             </form>
 
-            <h2>תמונות פעילות</h2>
+            <h2>Active images</h2>
             <div className="thumb-grid">
               {previewProduct.images.map((image, index) => (
                 <div key={`${image}-${index}`} className="thumb thumb-static">
-                  <img src={image} alt={`תמונת מוצר ${index + 1}`} />
+                  <img src={image} alt={`Product image ${index + 1}`} />
                 </div>
               ))}
             </div>
@@ -488,7 +530,7 @@ const AdminPage = () => {
           <>
             <form onSubmit={saveHomeHero} className="order-form">
               <label className="file-label">
-                העלאת תמונת באנר לרוחב לדף הבית
+                Upload a wide banner image for the home page
                 <input
                   type="file"
                   accept="image/*"
@@ -496,11 +538,11 @@ const AdminPage = () => {
                 />
               </label>
 
-              <button type="submit">שמור תמונת באנר</button>
+              <button type="submit">Save banner image</button>
             </form>
 
-            <h2>תמונת באנר נוכחית</h2>
-            <img src={homeHeroImageUrl} alt="תמונת באנר" className="hero-banner-image" />
+            <h2>Current banner image</h2>
+            <img src={homeHeroImageUrl} alt="Banner image" className="hero-banner-image" />
 
             {heroStatus ? <p className="status">{heroStatus}</p> : null}
           </>
