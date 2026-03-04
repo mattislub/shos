@@ -1,7 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
-const fs = require("fs/promises");
 require("dotenv").config();
 
 const db = require("./db");
@@ -12,256 +10,79 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-const productAssetsPath = path.join(
-  __dirname,
-  "..",
-  "..",
-  "client",
-  "src",
-  "assets",
-  "products"
-);
+const toProductResponse = (row) => ({
+  id: row.id,
+  slug: row.slug,
+  title: row.title,
+  description: row.description,
+  price_ils: row.price_ils,
+  image_url: row.image_url,
+  cta_text: row.cta_text
+});
 
-app.use("/product-assets", express.static(productAssetsPath));
-app.use("/api/product-assets", express.static(productAssetsPath));
-
-const parseImages = (value) => {
+app.get("/api/product", async (_req, res) => {
   try {
-    const parsed = value ? JSON.parse(value) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
-  }
-};
-
-app.get("/api/product", async (req, res) => {
-  try {
-    const productResult = await db.query(
-      "SELECT * FROM products WHERE active = true LIMIT 1"
+    const result = await db.query(
+      `SELECT id, slug, title, description, price_ils, image_url, cta_text
+       FROM products
+       WHERE active = true
+       ORDER BY id
+       LIMIT 1`
     );
-    const product = productResult.rows[0];
+
+    const product = result.rows[0];
 
     if (!product) {
       return res.status(404).json({ message: "No active product found" });
     }
 
-    const variantsResult = await db.query(
-      "SELECT * FROM variants WHERE product_id = $1 ORDER BY id",
-      [product.id]
-    );
-
-    const settingsResult = await db.query("SELECT * FROM settings LIMIT 1");
-
-    const variants = variantsResult.rows.map((variant) => ({
-      ...variant,
-      images: parseImages(variant.images),
-    }));
-
-    return res.json({
-      product,
-      variants,
-      settings: settingsResult.rows[0] || null,
-    });
+    return res.json({ product: toProductResponse(product) });
   } catch (error) {
-    console.error("Failed to fetch product data", error);
-    return res.status(500).json({ message: "Failed to load product data" });
+    console.error("Failed to fetch active product", error);
+    return res.status(500).json({ message: "Failed to load product" });
   }
 });
 
-app.get("/api/variants", async (req, res) => {
-  try {
-    const variantResult = await db.query(
-      "SELECT id, color_name, color_hex, sku, images FROM variants ORDER BY id"
-    );
+app.post("/api/orders", async (req, res) => {
+  const { customer_name, phone, quantity } = req.body || {};
 
-    const variants = variantResult.rows.map((variant) => ({
-      ...variant,
-      images: parseImages(variant.images),
-    }));
-
-    return res.json({ variants });
-  } catch (error) {
-    console.error("Failed to fetch variants", error);
-    return res.status(500).json({ message: "Failed to fetch variants" });
-  }
-});
-
-app.get("/api/product-images", async (req, res) => {
-  try {
-    const files = await fs.readdir(productAssetsPath, { withFileTypes: true });
-    const images = files
-      .filter((file) => file.isFile())
-      .map((file) => file.name)
-      .filter((name) => /\.(png|jpe?g|webp|gif|avif)$/i.test(name))
-      .sort((a, b) => a.localeCompare(b))
-      .map((name) => ({
-        name,
-        url: `/api/product-assets/${name}`,
-      }));
-
-    return res.json({ images });
-  } catch (error) {
-    console.error("Failed to list product images", error);
-    return res.status(500).json({ message: "Failed to list product images" });
-  }
-});
-
-app.post("/api/variants", async (req, res) => {
-  const { color_name, color_hex, sku, price_override, stock_qty, images } = req.body || {};
-
-  if (!color_name || !sku) {
-    return res.status(400).json({ message: "color_name and sku are required" });
+  if (!customer_name || !phone) {
+    return res.status(400).json({ message: "customer_name and phone are required" });
   }
 
-  const stockQty = Number(stock_qty);
-  if (!Number.isInteger(stockQty) || stockQty < 0) {
-    return res.status(400).json({ message: "stock_qty must be a non-negative integer" });
+  const parsedQuantity = Number(quantity);
+  if (!Number.isInteger(parsedQuantity) || parsedQuantity <= 0) {
+    return res.status(400).json({ message: "quantity must be a positive integer" });
   }
-
-  const priceOverride =
-    price_override === null || price_override === undefined || price_override === ""
-      ? null
-      : Number(price_override);
-
-  if (priceOverride !== null && (!Number.isInteger(priceOverride) || priceOverride < 0)) {
-    return res.status(400).json({ message: "price_override must be a non-negative integer" });
-  }
-
-  const cleanImages = Array.isArray(images)
-    ? images.map((value) => (typeof value === "string" ? value.trim() : "")).filter(Boolean)
-    : [];
 
   try {
     const productResult = await db.query(
       "SELECT id FROM products WHERE active = true ORDER BY id LIMIT 1"
     );
-    const activeProduct = productResult.rows[0];
 
-    if (!activeProduct) {
+    const product = productResult.rows[0];
+    if (!product) {
       return res.status(404).json({ message: "No active product found" });
     }
 
-    const existingSku = await db.query("SELECT id FROM variants WHERE sku = $1 LIMIT 1", [sku]);
-    if (existingSku.rows.length) {
-      return res.status(409).json({ message: "SKU already exists" });
-    }
-
-    const insertResult = await db.query(
-      `INSERT INTO variants (product_id, color_name, color_hex, sku, price_override, stock_qty, images)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, product_id, color_name, color_hex, sku, price_override, stock_qty, images`,
-      [
-        activeProduct.id,
-        String(color_name).trim(),
-        color_hex ? String(color_hex).trim() : null,
-        String(sku).trim(),
-        priceOverride,
-        stockQty,
-        JSON.stringify(cleanImages),
-      ]
+    const orderResult = await db.query(
+      `INSERT INTO orders (product_id, customer_name, phone, quantity)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, status, created_at`,
+      [product.id, String(customer_name).trim(), String(phone).trim(), parsedQuantity]
     );
 
-    return res.status(201).json({
-      variant: {
-        ...insertResult.rows[0],
-        images: parseImages(insertResult.rows[0].images),
-      },
-    });
+    return res.status(201).json({ order: orderResult.rows[0] });
   } catch (error) {
-    console.error("Failed to create variant", error);
-    return res.status(500).json({ message: "Failed to create variant" });
+    console.error("Failed to create order", error);
+    return res.status(500).json({ message: "Failed to create order" });
   }
 });
 
-app.put("/api/product/:id", async (req, res) => {
-  const productId = Number(req.params.id);
-  const { title, description, base_price } = req.body || {};
-
-  if (!Number.isInteger(productId) || productId <= 0) {
-    return res.status(400).json({ message: "Invalid product id" });
-  }
-
-  if (!title || !description) {
-    return res.status(400).json({ message: "title and description are required" });
-  }
-
-  const basePrice = Number(base_price);
-  if (!Number.isInteger(basePrice) || basePrice < 0) {
-    return res.status(400).json({ message: "base_price must be a non-negative integer" });
-  }
-
-  try {
-    const result = await db.query(
-      `UPDATE products
-       SET title = $1,
-           description = $2,
-           base_price = $3
-       WHERE id = $4
-       RETURNING id, title, description, base_price, active`,
-      [String(title).trim(), String(description).trim(), basePrice, productId]
-    );
-
-    if (!result.rows.length) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    return res.json({ product: result.rows[0] });
-  } catch (error) {
-    console.error("Failed to update product", error);
-    return res.status(500).json({ message: "Failed to update product" });
-  }
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true });
 });
-
-app.put("/api/variants/:id/images", async (req, res) => {
-  const variantId = Number(req.params.id);
-  const inputImages = Array.isArray(req.body?.images) ? req.body.images : null;
-
-  if (!Number.isInteger(variantId) || variantId <= 0) {
-    return res.status(400).json({ message: "Invalid variant id" });
-  }
-
-  if (!inputImages) {
-    return res.status(400).json({ message: "images must be an array" });
-  }
-
-  const cleanedImages = inputImages
-    .map((value) => (typeof value === "string" ? value.trim() : ""))
-    .filter(Boolean);
-
-  try {
-    const result = await db.query(
-      "UPDATE variants SET images = $1 WHERE id = $2 RETURNING id, color_name, images",
-      [JSON.stringify(cleanedImages), variantId]
-    );
-
-    if (!result.rows.length) {
-      return res.status(404).json({ message: "Variant not found" });
-    }
-
-    return res.json({
-      variant: {
-        ...result.rows[0],
-        images: parseImages(result.rows[0].images),
-      },
-    });
-  } catch (error) {
-    console.error("Failed to save variant images", error);
-    return res.status(500).json({ message: "Failed to save images" });
-  }
-});
-
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
-});
-
-if (process.env.NODE_ENV === "production") {
-  const clientPath = path.join(__dirname, "..", "..", "client", "dist");
-  app.use(express.static(clientPath));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(clientPath, "index.html"));
-  });
-}
 
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server listening on port ${port}`);
 });
