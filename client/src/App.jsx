@@ -301,6 +301,11 @@ const StorePage = () => {
           <p><strong>Water Resistance Level:</strong> Water Resistant</p>
         </div>
       </section>
+
+      <section className="card stacked-home-images" aria-label="Additional home images">
+        <img src="/uploads/abc.jpg" alt="Promotional image top" className="stacked-home-image" />
+        <img src="/uploads/dfg.jpg" alt="Promotional image bottom" className="stacked-home-image" />
+      </section>
     </main>
   );
 };
