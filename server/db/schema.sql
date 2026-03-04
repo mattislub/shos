@@ -31,3 +31,10 @@ CREATE TABLE store_orders (
   status TEXT NOT NULL DEFAULT 'new',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE store_site_content (
+  id SERIAL PRIMARY KEY,
+  home_hero_image_url TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

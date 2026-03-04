@@ -56,6 +56,17 @@ const loadActiveProduct = async () => {
   return mapProductWithImages(product, imagesResult.rows);
 };
 
+const loadHomeHeroImage = async () => {
+  const result = await db.query(
+    `SELECT home_hero_image_url
+     FROM store_site_content
+     ORDER BY id
+     LIMIT 1`
+  );
+
+  return result.rows[0]?.home_hero_image_url || "";
+};
+
 const saveBase64Image = (imagePayload) => {
   const { name, data } = imagePayload || {};
   if (!name || !data || typeof name !== "string" || typeof data !== "string") {
@@ -100,15 +111,52 @@ const saveBase64Image = (imagePayload) => {
 app.get("/api/product", async (_req, res) => {
   try {
     const product = await loadActiveProduct();
+    const homeHeroImageUrl = await loadHomeHeroImage();
 
     if (!product) {
       return res.status(404).json({ message: "No active product found" });
     }
 
-    return res.json({ product });
+    return res.json({ product, home_hero_image_url: homeHeroImageUrl });
   } catch (error) {
     console.error("Failed to fetch active product", error);
     return res.status(500).json({ message: "Failed to load product" });
+  }
+});
+
+app.put("/api/admin/home-hero", async (req, res) => {
+  const { image } = req.body || {};
+
+  if (!image || typeof image !== "object") {
+    return res.status(400).json({ message: "image is required" });
+  }
+
+  try {
+    const imageUrl = saveBase64Image(image);
+
+    const existingResult = await db.query("SELECT id FROM store_site_content ORDER BY id LIMIT 1");
+    const existing = existingResult.rows[0];
+
+    if (!existing) {
+      await db.query(
+        `INSERT INTO store_site_content (home_hero_image_url)
+         VALUES ($1)`,
+        [imageUrl]
+      );
+    } else {
+      await db.query(
+        `UPDATE store_site_content
+         SET home_hero_image_url = $1,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [imageUrl, existing.id]
+      );
+    }
+
+    return res.json({ home_hero_image_url: imageUrl });
+  } catch (error) {
+    console.error("Failed to update home hero image", error);
+    return res.status(500).json({ message: "Failed to update home hero image" });
   }
 });
 
