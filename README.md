@@ -4,7 +4,7 @@
 
 - `client/` — דף נחיתה יחיד עם טופס הזמנה קצר.
 - `server/` — API פשוט לשליפת המוצר ולשמירת הזמנה.
-- `server/db/schema.sql` — סכימה חדשה ופשוטה של `products` ו-`orders`.
+- `server/db/schema.sql` — מבנה המסד החדש שמתעדכן בכל עליית שרת.
 
 ## הפעלה
 
@@ -12,9 +12,10 @@
 cd server
 npm install
 export DATABASE_URL=postgres://user:password@localhost:5432/shos
-npm run db:init
 npm run dev
 ```
+
+> בכל הפעלה מחדש של השרת, הסכימה הקיימת נמחקת ונבנית מחדש מתוך `server/db/schema.sql`.
 
 בטרמינל נוסף:
 
@@ -26,5 +27,11 @@ npm run dev
 
 ## API עיקרי
 
-- `GET /api/product` — מחזיר את המוצר הפעיל היחיד.
+- `GET /api/product` — מחזיר את המוצר הפעיל היחיד כולל מערך תמונות `images`.
 - `POST /api/orders` — יוצר הזמנה חדשה (שם, טלפון, כמות).
+- `PUT /api/admin/product` — עדכון מוצר פעיל והעלאת תמונות מקבצים מקומיים (נשמרות פיזית בשרת תחת `/uploads`).
+
+## ניהול מוצר
+
+- דף הניהול זמין בכתובת `http://localhost:5173/admin` (ללא קישור גלוי מדף הבית).
+- העלאת תמונות נעשית בקבצים מקומיים (לא קישורים), וניתן להעלות כמה תמונות לכל מוצר.
