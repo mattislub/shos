@@ -17,6 +17,9 @@ const DEFAULT_PRODUCT = {
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
 };
 
+const DEFAULT_HOME_HERO_IMAGE =
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=80";
+
 const initializeDatabaseStructure = async () => {
   await db.query(schema);
 
@@ -39,6 +42,12 @@ const initializeDatabaseStructure = async () => {
     `INSERT INTO store_product_images (product_id, image_url, sort_order)
      VALUES ($1, $2, 0)`,
     [productId, DEFAULT_PRODUCT.defaultImage]
+  );
+
+  await db.query(
+    `INSERT INTO store_site_content (home_hero_image_url)
+     VALUES ($1)`,
+    [DEFAULT_HOME_HERO_IMAGE]
   );
 };
 
