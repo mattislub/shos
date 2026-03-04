@@ -242,9 +242,7 @@ const StorePage = () => {
 
       <section className="card product-details-panel" aria-labelledby="product-details-title">
         <div className="details-header">
-          <p className="rating">⭐ 5.0 5.0 out of 5 stars (1)</p>
-          <p className="availability">Currently unavailable.</p>
-          <p className="stock-note">We don't know when or if this item will be back in stock.</p>
+          <p className="rating">⭐⭐⭐⭐⭐</p>
         </div>
 
         <h2 id="product-details-title">Product details</h2>
