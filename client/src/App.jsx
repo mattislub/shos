@@ -169,7 +169,20 @@ const StorePage = () => {
   const currentProduct = normalizeProduct(product || fallbackProduct);
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
 
-  const proceedToNextStep = (event) => {
+  const totalLabel = useMemo(
+    () => formatIls(currentProduct.price_ils * quantity),
+    [currentProduct.price_ils, quantity]
+  );
+
+  const quickActions = [
+    { label: "צור קשר", icon: "📞" },
+    { label: "אודות", icon: "ℹ️" },
+    { label: "התחבר", icon: "👤" },
+    { label: "עגלה", icon: "🛒" },
+    { label: "רשימת משאלות", icon: "💖" }
+  ];
+
+  const submitOrder = async (event) => {
     event.preventDefault();
     setStatus(`Selected color: ${selectedColor}. You can continue to the next step.`);
   };
