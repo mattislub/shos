@@ -182,6 +182,14 @@ const StorePage = () => {
     [currentProduct.price_ils, quantity]
   );
 
+  const quickActions = [
+    { label: "צור קשר", icon: "📞" },
+    { label: "אודות", icon: "ℹ️" },
+    { label: "התחבר", icon: "👤" },
+    { label: "עגלה", icon: "🛒" },
+    { label: "רשימת משאלות", icon: "💖" }
+  ];
+
   const submitOrder = async (event) => {
     event.preventDefault();
     setStatus("");
@@ -214,13 +222,18 @@ const StorePage = () => {
   return (
     <main className="page" dir="rtl">
       <header className="home-header">
-        <h1 className="home-title">ברוכים הבאים לחנות</h1>
+        <div className="home-title-wrap">
+          <p className="home-eyebrow">קולקציה חדשה 2026</p>
+          <h1 className="home-title">ברוכים הבאים לחנות</h1>
+          <p className="home-subtitle">מוצרים נבחרים, משלוח מהיר וחווית קנייה פשוטה.</p>
+        </div>
         <nav className="home-actions" aria-label="פעולות ראשיות">
-          <button type="button">צור קשר</button>
-          <button type="button">אודות</button>
-          <button type="button">התחבר</button>
-          <button type="button">עגלה</button>
-          <button type="button">רשימת משאלות</button>
+          {quickActions.map((action) => (
+            <button key={action.label} type="button" className="home-action-button">
+              <span className="home-action-icon" aria-hidden="true">{action.icon}</span>
+              <span>{action.label}</span>
+            </button>
+          ))}
         </nav>
       </header>
 
