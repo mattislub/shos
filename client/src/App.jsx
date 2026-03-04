@@ -63,13 +63,14 @@ const useProduct = () => {
         setLoading(true);
         const response = await fetch(`${apiUrl}/product`, { signal: controller.signal });
         if (!response.ok) {
-          throw new Error("Failed to load product");
+          throw new Error(`Failed to load product: ${response.status} ${response.statusText}`);
         }
 
         const payload = await response.json();
         setProduct(normalizeProduct(payload.product || fallbackProduct));
       } catch (err) {
         if (err.name !== "AbortError") {
+          console.error("Product update from server failed:", err);
           setError("לא הצלחנו לטעון את הנתונים מהשרת. מוצגת תצוגת ברירת מחדל.");
           setProduct(normalizeProduct(fallbackProduct));
         }
