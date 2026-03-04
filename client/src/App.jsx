@@ -13,8 +13,15 @@ const fallbackProduct = {
   cta_text: "אני רוצה להזמין"
 };
 
-const apiUrl = "http://localhost:3001/api";
-const serverBaseUrl = "http://localhost:3001";
+const apiUrl = (import.meta.env.VITE_API_URL || "/api").trim();
+
+const serverBaseUrl = (() => {
+  try {
+    return new URL(apiUrl, window.location.origin).origin;
+  } catch (_error) {
+    return window.location.origin;
+  }
+})();
 
 const formatIls = (amount) =>
   new Intl.NumberFormat("he-IL", {
