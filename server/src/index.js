@@ -3,6 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const db = require("./db");
+const { initializeDatabaseStructure } = require("./schema");
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -24,8 +25,8 @@ app.get("/api/product", async (_req, res) => {
   try {
     const result = await db.query(
       `SELECT id, slug, title, description, price_ils, image_url, cta_text
-       FROM products
-       WHERE active = true
+       FROM store_products
+       WHERE is_active = true
        ORDER BY id
        LIMIT 1`
     );
@@ -57,7 +58,7 @@ app.post("/api/orders", async (req, res) => {
 
   try {
     const productResult = await db.query(
-      "SELECT id FROM products WHERE active = true ORDER BY id LIMIT 1"
+      "SELECT id FROM store_products WHERE is_active = true ORDER BY id LIMIT 1"
     );
 
     const product = productResult.rows[0];
@@ -66,7 +67,7 @@ app.post("/api/orders", async (req, res) => {
     }
 
     const orderResult = await db.query(
-      `INSERT INTO orders (product_id, customer_name, phone, quantity)
+      `INSERT INTO store_orders (product_id, customer_name, phone, quantity)
        VALUES ($1, $2, $3, $4)
        RETURNING id, status, created_at`,
       [product.id, String(customer_name).trim(), String(phone).trim(), parsedQuantity]
@@ -79,10 +80,71 @@ app.post("/api/orders", async (req, res) => {
   }
 });
 
+
+app.put("/api/admin/product", async (req, res) => {
+  const { title, description, price_ils, image_url, cta_text } = req.body || {};
+
+  if (!title || !description || !image_url || !cta_text) {
+    return res.status(400).json({ message: "title, description, image_url and cta_text are required" });
+  }
+
+  const parsedPrice = Number(price_ils);
+  if (!Number.isInteger(parsedPrice) || parsedPrice < 0) {
+    return res.status(400).json({ message: "price_ils must be a non-negative integer" });
+  }
+
+  try {
+    const productResult = await db.query(
+      "SELECT id FROM store_products WHERE is_active = true ORDER BY id LIMIT 1"
+    );
+
+    const product = productResult.rows[0];
+    if (!product) {
+      return res.status(404).json({ message: "No active product found" });
+    }
+
+    const updatedResult = await db.query(
+      `UPDATE store_products
+       SET title = $1,
+           description = $2,
+           price_ils = $3,
+           image_url = $4,
+           cta_text = $5,
+           updated_at = NOW()
+       WHERE id = $6
+       RETURNING id, slug, title, description, price_ils, image_url, cta_text`,
+      [
+        String(title).trim(),
+        String(description).trim(),
+        parsedPrice,
+        String(image_url).trim(),
+        String(cta_text).trim(),
+        product.id
+      ]
+    );
+
+    return res.json({ product: toProductResponse(updatedResult.rows[0]) });
+  } catch (error) {
+    console.error("Failed to update product", error);
+    return res.status(500).json({ message: "Failed to update product" });
+  }
+});
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
+const start = async () => {
+  try {
+    await initializeDatabaseStructure();
+    console.log("Database structure recreated successfully");
+
+    app.listen(port, () => {
+      console.log(`Server listening on port ${port}`);
+    });
+  } catch (error) {
+    console.error("Failed to recreate database structure", error);
+    process.exit(1);
+  }
+};
+
+start();

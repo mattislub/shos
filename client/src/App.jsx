@@ -17,14 +17,12 @@ const formatIls = (amount) =>
     maximumFractionDigits: 0
   }).format(amount / 100);
 
-function App() {
+const apiUrl = "http://localhost:3001/api";
+
+const useProduct = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [status, setStatus] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -32,7 +30,7 @@ function App() {
     const loadProduct = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:3001/api/product", {
+        const response = await fetch(`${apiUrl}/product`, {
           signal: controller.signal
         });
 
@@ -57,6 +55,16 @@ function App() {
     return () => controller.abort();
   }, []);
 
+  return { product, setProduct, loading, error };
+};
+
+const StorePage = () => {
+  const { product, loading, error } = useProduct();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [status, setStatus] = useState("");
+
   const totalLabel = useMemo(() => {
     const data = product || fallbackProduct;
     return formatIls(data.price_ils * quantity);
@@ -72,7 +80,7 @@ function App() {
     }
 
     try {
-      const response = await fetch("http://localhost:3001/api/orders", {
+      const response = await fetch(`${apiUrl}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -90,7 +98,7 @@ function App() {
       setName("");
       setPhone("");
       setQuantity(1);
-    } catch (err) {
+    } catch (_err) {
       setStatus("לא הצלחנו לשלוח הזמנה כרגע. אפשר לנסות שוב בעוד רגע.");
     }
   };
@@ -136,6 +144,120 @@ function App() {
       </section>
     </main>
   );
+};
+
+const AdminPage = () => {
+  const { product, setProduct, loading, error } = useProduct();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priceIls, setPriceIls] = useState("");
+  const [ctaText, setCtaText] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    const current = product || fallbackProduct;
+    setTitle(current.title);
+    setDescription(current.description);
+    setPriceIls(String((current.price_ils || 0) / 100));
+    setCtaText(current.cta_text);
+    setImageUrl(current.image_url);
+  }, [product]);
+
+  const onFileSelected = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setImageUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveProduct = async (event) => {
+    event.preventDefault();
+    setStatus("");
+
+    const parsedPrice = Number(priceIls);
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      setStatus("מחיר לא תקין.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/admin/product`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          price_ils: Math.round(parsedPrice * 100),
+          cta_text: ctaText.trim(),
+          image_url: imageUrl.trim()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("save failed");
+      }
+
+      const payload = await response.json();
+      setProduct(payload.product);
+      setStatus("המוצר נשמר בהצלחה.");
+    } catch (_err) {
+      setStatus("שמירת המוצר נכשלה.");
+    }
+  };
+
+  const previewProduct = product || fallbackProduct;
+
+  return (
+    <main className="page" dir="rtl">
+      <section className="card">
+        <h1>ניהול מוצר</h1>
+        {loading ? <p>טוען מוצר...</p> : null}
+        {error ? <p className="warning">{error}</p> : null}
+
+        <form onSubmit={saveProduct} className="order-form">
+          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="כותרת" />
+          <textarea
+            className="admin-textarea"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="תיאור"
+          />
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={priceIls}
+            onChange={(event) => setPriceIls(event.target.value)}
+            placeholder="מחיר בש״ח"
+          />
+          <input value={ctaText} onChange={(event) => setCtaText(event.target.value)} placeholder="טקסט כפתור" />
+          <input value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="קישור תמונה" />
+          <input type="file" accept="image/*" onChange={onFileSelected} />
+
+          <button type="submit">שמור מוצר</button>
+        </form>
+
+        <h2>תצוגה מקדימה</h2>
+        <img src={imageUrl || previewProduct.image_url} alt={title || previewProduct.title} className="product-image" />
+        {status ? <p className="status">{status}</p> : null}
+      </section>
+    </main>
+  );
+};
+
+function App() {
+  const isAdminPage = window.location.pathname === "/admin";
+
+  return isAdminPage ? <AdminPage /> : <StorePage />;
 }
 
 export default App;
