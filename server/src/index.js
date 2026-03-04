@@ -133,6 +133,14 @@ app.post("/api/orders", async (req, res) => {
 app.put("/api/admin/product", async (req, res) => {
   const { title, description, price_ils, cta_text, images } = req.body || {};
 
+  console.info("[admin] update product request received", {
+    hasTitle: Boolean(title),
+    hasDescription: Boolean(description),
+    hasCtaText: Boolean(cta_text),
+    imagesType: Array.isArray(images) ? "array" : typeof images,
+    imagesCount: Array.isArray(images) ? images.length : 0
+  });
+
   if (!title || !description || !cta_text) {
     return res.status(400).json({ message: "title, description and cta_text are required" });
   }
@@ -168,7 +176,17 @@ app.put("/api/admin/product", async (req, res) => {
     );
 
     if (Array.isArray(images) && images.length > 0) {
+      console.info("[admin] processing uploaded images", {
+        requestedCount: images.length,
+        names: images.map((image) => image?.name || "unknown")
+      });
+
       const imageUrls = images.map(saveBase64Image);
+
+      console.info("[admin] image files saved to disk", {
+        savedCount: imageUrls.length,
+        imageUrls
+      });
 
       await db.query("DELETE FROM store_product_images WHERE product_id = $1", [product.id]);
       for (const [index, imageUrl] of imageUrls.entries()) {
@@ -181,6 +199,23 @@ app.put("/api/admin/product", async (req, res) => {
     }
 
     const updatedProduct = await loadActiveProduct();
+    console.info("[admin] update product response summary", {
+      returnedImagesCount: updatedProduct?.images?.length || 0,
+      returnedImages: updatedProduct?.images || []
+    });
+
+    if (Array.isArray(images) && images.length > 1 && (updatedProduct?.images?.length || 0) <= 1) {
+      console.warn(
+        "[admin] multiple upload diagnostic: request included multiple images but response has one (or zero). Check DB insert loop and constraints."
+      );
+    }
+
+    if (Array.isArray(images) && images.length > 0 && (updatedProduct?.images?.length || 0) === 0) {
+      console.warn(
+        "[admin] image display diagnostic: images were uploaded but no image URLs were returned. Check /uploads static serving and store_product_images rows."
+      );
+    }
+
     return res.json({ product: updatedProduct });
   } catch (error) {
     console.error("Failed to update product", error);
