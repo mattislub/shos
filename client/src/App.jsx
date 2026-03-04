@@ -203,6 +203,19 @@ const AdminPage = () => {
 
   const onFilesSelected = (event) => {
     const files = Array.from(event.target.files || []);
+    console.info("[admin] image files selected", {
+      count: files.length,
+      names: files.map((file) => file.name),
+      sizes: files.map((file) => file.size),
+      inputMultipleEnabled: Boolean(event.target?.multiple)
+    });
+
+    if (files.length <= 1) {
+      console.warn(
+        "[admin] multiple image upload diagnostic: browser reported one (or zero) file only. If this keeps happening, verify platform supports multi-select (some mobile pickers don't) and pick multiple files in one selection."
+      );
+    }
+
     setSelectedFiles(files);
   };
 
@@ -217,6 +230,11 @@ const AdminPage = () => {
     }
 
     try {
+      console.info("[admin] preparing product save request", {
+        selectedFilesCount: selectedFiles.length,
+        selectedFileNames: selectedFiles.map((file) => file.name)
+      });
+
       const imagesPayload = await Promise.all(
         selectedFiles.map(
           (file) =>
@@ -228,6 +246,11 @@ const AdminPage = () => {
             })
         )
       );
+
+      console.info("[admin] image payload ready", {
+        payloadCount: imagesPayload.length,
+        totalPayloadSize: imagesPayload.reduce((sum, image) => sum + (image?.data?.length || 0), 0)
+      });
 
       const response = await fetch(`${apiUrl}/admin/product`, {
         method: "PUT",
@@ -242,14 +265,42 @@ const AdminPage = () => {
       });
 
       if (!response.ok) {
+        const responseText = await response.text();
+        console.error("[admin] save failed", {
+          status: response.status,
+          body: responseText
+        });
         throw new Error("save failed");
       }
 
       const payload = await response.json();
+      const updatedImages = payload?.product?.images || [];
+      console.info("[admin] save succeeded", {
+        uploadedCount: imagesPayload.length,
+        returnedImagesCount: updatedImages.length,
+        returnedImages: updatedImages
+      });
+
+      if (imagesPayload.length > 0 && updatedImages.length === 0) {
+        console.warn(
+          "[admin] image display diagnostic: server returned zero images after upload. Verify /uploads static path and saved image URLs."
+        );
+      }
+
+      if (imagesPayload.length > 1 && updatedImages.length <= 1) {
+        console.warn(
+          "[admin] multiple upload diagnostic: more than one file was sent, but one (or zero) image came back. Check backend insert loop / payload size limits."
+        );
+      }
+
       setProduct(normalizeProduct(payload.product));
       setSelectedFiles([]);
       setStatus("המוצר נשמר בהצלחה.");
-    } catch (_err) {
+    } catch (err) {
+      console.error("[admin] product save exception", {
+        message: err?.message,
+        stack: err?.stack
+      });
       setStatus("שמירת המוצר נכשלה.");
     }
   };
