@@ -285,7 +285,6 @@ const StorePage = () => {
 
         <h3>Style</h3>
         <div className="details-grid">
-          <p><strong>Color:</strong> Blue</p>
           <p><strong>Heel Type:</strong> Flat</p>
           <p><strong>Toe Style:</strong> Round Toe</p>
           <p><strong>Style Name:</strong> Casual</p>
