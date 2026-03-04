@@ -19,6 +19,10 @@ app.use("/uploads", express.static(uploadsDir));
 
 const mapProductWithImages = (row, imageRows) => {
   const images = imageRows.map((image) => image.image_url);
+  const imageEntries = imageRows.map((image) => ({
+    image_url: image.image_url,
+    color_name: image.color_name || ""
+  }));
   return {
     id: row.id,
     slug: row.slug,
@@ -27,7 +31,8 @@ const mapProductWithImages = (row, imageRows) => {
     price_ils: row.price_ils,
     cta_text: row.cta_text,
     image_url: images[0] || "",
-    images
+    images,
+    image_entries: imageEntries
   };
 };
 
@@ -46,7 +51,7 @@ const loadActiveProduct = async () => {
   }
 
   const imagesResult = await db.query(
-    `SELECT image_url
+    `SELECT image_url, color_name
      FROM store_product_images
      WHERE product_id = $1
      ORDER BY sort_order, id`,
@@ -220,6 +225,13 @@ app.put("/api/admin/product", async (req, res) => {
     return res.status(400).json({ message: "images must be an array" });
   }
 
+  if (Array.isArray(images)) {
+    const hasImageWithoutColor = images.some((image) => !String(image?.color_name || "").trim());
+    if (hasImageWithoutColor) {
+      return res.status(400).json({ message: "every uploaded image must include color_name" });
+    }
+  }
+
   const dbClient = await db.connect();
   let isTransactionOpen = false;
 
@@ -264,10 +276,11 @@ app.put("/api/admin/product", async (req, res) => {
 
       await dbClient.query("DELETE FROM store_product_images WHERE product_id = $1", [product.id]);
       for (const [index, imageUrl] of imageUrls.entries()) {
+        const imageColor = String(images[index]?.color_name || "").trim();
         await dbClient.query(
-          `INSERT INTO store_product_images (product_id, image_url, sort_order)
-           VALUES ($1, $2, $3)`,
-          [product.id, imageUrl, index]
+          `INSERT INTO store_product_images (product_id, image_url, color_name, sort_order)
+           VALUES ($1, $2, $3, $4)`,
+          [product.id, imageUrl, imageColor, index]
         );
       }
     }
