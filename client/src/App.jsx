@@ -186,6 +186,9 @@ const StorePage = () => {
   const { product, homeHeroImageUrl, loading, error } = useProduct();
   const [status, setStatus] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [currentStep, setCurrentStep] = useState("color");
+  const [selectedSizes, setSelectedSizes] = useState([]);
+  const [quantity, setQuantity] = useState(1);
 
   const currentProduct = normalizeProduct(product || fallbackProduct);
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
@@ -199,9 +202,38 @@ const StorePage = () => {
     { label: "רשימת משאלות", icon: "💖" }
   ];
 
-  const submitOrder = async (event) => {
+  const sizeChartRows = [
+    { brandSize: "35", usSize: "4", euSize: "35", shoeWidth: "9.8", footLength: "8.8" },
+    { brandSize: "36", usSize: "5", euSize: "36", shoeWidth: "10.1", footLength: "9.1" },
+    { brandSize: "37", usSize: "6", euSize: "37", shoeWidth: "10.3", footLength: "9.4" },
+    { brandSize: "38", usSize: "7", euSize: "38", shoeWidth: "10.6", footLength: "9.6" },
+    { brandSize: "39", usSize: "8", euSize: "39", shoeWidth: "10.9", footLength: "9.9" },
+    { brandSize: "40", usSize: "9", euSize: "40", shoeWidth: "11.2", footLength: "10.1" }
+  ];
+
+  const toggleSizeSelection = (size) => {
+    setSelectedSizes((current) => (
+      current.includes(size)
+        ? current.filter((item) => item !== size)
+        : [...current, size]
+    ));
+  };
+
+  const submitColorStep = async (event) => {
     event.preventDefault();
-    setStatus("You can continue to the next step.");
+    setStatus("");
+    setCurrentStep("product");
+  };
+
+  const submitProductStep = async (event) => {
+    event.preventDefault();
+
+    if (selectedSizes.length === 0) {
+      setStatus("יש לבחור לפחות מידה אחת.");
+      return;
+    }
+
+    setStatus(`נבחרו ${selectedSizes.length} מידות, כמות ${quantity}. ניתן להמשיך.`);
   };
 
   return (
@@ -250,9 +282,71 @@ const StorePage = () => {
         <h1>{currentProduct.title}</h1>
         <p>{currentProduct.description}</p>
 
-        <form onSubmit={submitOrder} className="order-form">
-          <button type="submit">Continue</button>
-        </form>
+        {currentStep === "color" ? (
+          <form onSubmit={submitColorStep} className="order-form">
+            <button type="submit">המשך</button>
+          </form>
+        ) : (
+          <section className="product-step" aria-label="בחירת מידות וכמות">
+            <h2>Size Chart</h2>
+            <p className="size-chart-subtitle">US Regular</p>
+
+            <div className="size-chart-table-wrap">
+              <table className="size-chart-table">
+                <thead>
+                  <tr>
+                    <th>Brand Size</th>
+                    <th>US Size</th>
+                    <th>EU Size</th>
+                    <th>Shoe Width (in)</th>
+                    <th>Foot Length (in)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sizeChartRows.map((row) => (
+                    <tr key={row.brandSize}>
+                      <td>{row.brandSize}</td>
+                      <td>{row.usSize}</td>
+                      <td>{row.euSize}</td>
+                      <td>{row.shoeWidth}</td>
+                      <td>{row.footLength}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <form onSubmit={submitProductStep} className="order-form">
+              <fieldset className="size-selector">
+                <legend>בחירת מידות (אפשר יותר ממידה אחת)</legend>
+                <div className="size-options-grid">
+                  {sizeChartRows.map((row) => (
+                    <label key={`size-option-${row.brandSize}`} className="size-option">
+                      <input
+                        type="checkbox"
+                        checked={selectedSizes.includes(row.brandSize)}
+                        onChange={() => toggleSizeSelection(row.brandSize)}
+                      />
+                      <span>{row.brandSize}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              <label>
+                כמות
+                <input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
+                />
+              </label>
+
+              <button type="submit">המשך</button>
+            </form>
+          </section>
+        )}
 
         {status ? <p className="status">{status}</p> : null}
       </section>
