@@ -117,6 +117,13 @@ body {
   border-radius: 12px;
 }
 
+.thumb-instruction {
+  margin: 12px 0 6px;
+  color: #7c2d12;
+  font-weight: 600;
+  text-align: center;
+}
+
 .thumb-grid {
   margin-top: 10px;
   display: grid;

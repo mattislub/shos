@@ -228,21 +228,24 @@ const StorePage = () => {
         <img src={displayImage} alt={currentProduct.title} className="product-image" />
 
         {currentProduct.images.length > 1 ? (
-          <div className="thumb-grid">
-            {currentProduct.images.map((image, index) => (
-              <button
-                key={`${image}-${index}`}
-                type="button"
-                className={`thumb ${selectedImageIndex === index ? "thumb-active" : ""}`}
-                onClick={() => setSelectedImageIndex(index)}
-              >
-                <img src={image} alt={`Image ${index + 1}`} />
-                {currentProduct.image_entries[index]?.color_name ? (
-                  <span>{currentProduct.image_entries[index].color_name}</span>
-                ) : null}
-              </button>
-            ))}
-          </div>
+          <>
+            <p className="thumb-instruction">Choose the color you like and click Continue.</p>
+            <div className="thumb-grid">
+              {currentProduct.images.map((image, index) => (
+                <button
+                  key={`${image}-${index}`}
+                  type="button"
+                  className={`thumb ${selectedImageIndex === index ? "thumb-active" : ""}`}
+                  onClick={() => setSelectedImageIndex(index)}
+                >
+                  <img src={image} alt={`Image ${index + 1}`} />
+                  {currentProduct.image_entries[index]?.color_name ? (
+                    <span>{currentProduct.image_entries[index].color_name}</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </>
         ) : null}
 
         {selectedImageColor ? <p className="status">Selected color: {selectedImageColor}</p> : null}
