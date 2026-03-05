@@ -113,6 +113,14 @@ const saveBase64Image = (imagePayload) => {
   return `/uploads/${filename}`;
 };
 
+const resolveImageUrl = (imagePayload) => {
+  if (imagePayload?.image_url && typeof imagePayload.image_url === "string") {
+    return imagePayload.image_url;
+  }
+
+  return saveBase64Image(imagePayload);
+};
+
 app.get("/api/product", async (_req, res) => {
   try {
     const product = await loadActiveProduct();
@@ -230,6 +238,16 @@ app.put("/api/admin/product", async (req, res) => {
     if (hasImageWithoutColor) {
       return res.status(400).json({ message: "every uploaded image must include color_name" });
     }
+
+    const hasInvalidImagePayload = images.some((image) => {
+      const hasImageUrl = typeof image?.image_url === "string" && image.image_url.trim().length > 0;
+      const hasUploadPayload = typeof image?.data === "string" && typeof image?.name === "string";
+      return !hasImageUrl && !hasUploadPayload;
+    });
+
+    if (hasInvalidImagePayload) {
+      return res.status(400).json({ message: "each image must include image_url or upload payload" });
+    }
   }
 
   const dbClient = await db.connect();
@@ -267,7 +285,7 @@ app.put("/api/admin/product", async (req, res) => {
         names: images.map((image) => image?.name || "unknown")
       });
 
-      const imageUrls = images.map(saveBase64Image);
+      const imageUrls = images.map(resolveImageUrl);
 
       console.info("[admin] image files saved to disk", {
         savedCount: imageUrls.length,

@@ -143,6 +143,22 @@ const normalizeProduct = (product) => {
   };
 };
 
+const listUniqueColors = (entries) => {
+  const seen = new Set();
+
+  return (Array.isArray(entries) ? entries : [])
+    .map((entry) => String(entry?.color_name || "").trim())
+    .filter((color) => {
+      const normalizedColor = color.toLowerCase();
+      if (!color || seen.has(normalizedColor)) {
+        return false;
+      }
+
+      seen.add(normalizedColor);
+      return true;
+    });
+};
+
 const useProduct = () => {
   const [product, setProduct] = useState(null);
   const [homeHeroImageUrl, setHomeHeroImageUrl] = useState(fallbackHomeHeroImage);
@@ -193,6 +209,12 @@ const StorePage = () => {
   const currentProduct = normalizeProduct(product || fallbackProduct);
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
   const selectedImageColor = currentProduct.image_entries[selectedImageIndex]?.color_name || "";
+
+  useEffect(() => {
+    if (selectedImageIndex >= currentProduct.images.length) {
+      setSelectedImageIndex(0);
+    }
+  }, [currentProduct.images.length, selectedImageIndex]);
 
   const sizeChartRows = [
     { brandSize: "35", usSize: "4", euSize: "35", shoeWidth: "9.8", footLength: "8.8" },
@@ -285,6 +307,25 @@ const StorePage = () => {
 
           <section className="product-step-image-block" aria-label="Product image">
             <img src={displayImage} alt={currentProduct.title} className="product-image" />
+            {currentProduct.images.length > 1 ? (
+              <div className="thumb-grid">
+                {currentProduct.images.map((image, index) => (
+                  <button
+                    key={`step-image-${image}-${index}`}
+                    type="button"
+                    className={`thumb ${selectedImageIndex === index ? "thumb-active" : ""}`}
+                    onClick={() => setSelectedImageIndex(index)}
+                  >
+                    <img src={image} alt={`Product image ${index + 1}`} />
+                    {currentProduct.image_entries[index]?.color_name ? (
+                      <span>{currentProduct.image_entries[index].color_name}</span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            {selectedImageColor ? <p className="status">Selected color: {selectedImageColor}</p> : null}
             <h2 className="product-step-product-title">{currentProduct.title}</h2>
             <p className="status">Price: ${usdPrice} USD</p>
           </section>
@@ -456,6 +497,7 @@ const AdminPage = () => {
   const [ctaText, setCtaText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imageColors, setImageColors] = useState({});
+  const [additionalFilesByColor, setAdditionalFilesByColor] = useState({});
   const [activeTab, setActiveTab] = useState("product");
   const [heroFile, setHeroFile] = useState(null);
   const [status, setStatus] = useState("");
@@ -497,6 +539,9 @@ const AdminPage = () => {
 
   const fileKey = (file) => `${file.name}-${file.lastModified}-${file.size}`;
 
+  const previewProduct = normalizeProduct(product || fallbackProduct);
+  const existingColors = listUniqueColors(previewProduct.image_entries);
+
   const saveProduct = async (event) => {
     event.preventDefault();
     setStatus("");
@@ -513,6 +558,10 @@ const AdminPage = () => {
         selectedFileNames: selectedFiles.map((file) => file.name)
       });
 
+      const additionalUploads = Object.entries(additionalFilesByColor).flatMap(([colorName, files]) =>
+        (files || []).map((file) => ({ file, color_name: colorName }))
+      );
+
       const missingColor = selectedFiles.find((file) => !String(imageColors[fileKey(file)] || "").trim());
       if (missingColor) {
         setStatus("Please select a color for every uploaded image.");
@@ -520,6 +569,12 @@ const AdminPage = () => {
       }
 
       const imagesPayload = await Promise.all(selectedFiles.map((file) => compressImageForUpload(file)));
+      const additionalImagesPayload = await Promise.all(
+        additionalUploads.map(async ({ file, color_name }) => ({
+          ...(await compressImageForUpload(file)),
+          color_name: String(color_name || "").trim()
+        }))
+      );
 
       const oversizedImages = imagesPayload.filter((image) => dataUrlToBytes(image.data) > MAX_UPLOAD_BYTES);
       if (oversizedImages.length > 0) {
@@ -541,6 +596,19 @@ const AdminPage = () => {
         color_name: String(imageColors[fileKey(selectedFiles[index])] || "").trim()
       }));
 
+      const preservedImages = selectedFiles.length === 0
+        ? previewProduct.image_entries.map((entry) => ({
+          image_url: entry.image_url,
+          color_name: String(entry.color_name || "").trim()
+        }))
+        : [];
+
+      const allImagesForRequest = [
+        ...preservedImages,
+        ...requestImages,
+        ...additionalImagesPayload.map(({ name, data, color_name }) => ({ name, data, color_name }))
+      ];
+
       const response = await fetch(`${apiUrl}/admin/product`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -549,7 +617,7 @@ const AdminPage = () => {
           description: description.trim(),
           price_ils: Math.round(parsedPrice * 100),
           cta_text: ctaText.trim(),
-          images: requestImages
+          images: allImagesForRequest
         })
       });
 
@@ -585,6 +653,7 @@ const AdminPage = () => {
       setProduct(normalizeProduct(payload.product));
       setSelectedFiles([]);
       setImageColors({});
+      setAdditionalFilesByColor({});
       setStatus("Product saved successfully.");
     } catch (err) {
       console.error("[admin] product save exception", {
@@ -594,8 +663,6 @@ const AdminPage = () => {
       setStatus("Saving product failed.");
     }
   };
-
-  const previewProduct = normalizeProduct(product || fallbackProduct);
 
   const saveHomeHero = async (event) => {
     event.preventDefault();
@@ -702,6 +769,32 @@ const AdminPage = () => {
                       </label>
                     );
                   })}
+                </>
+              ) : null}
+
+              {existingColors.length > 0 ? (
+                <>
+                  <h3 className="admin-subtitle">Add more images by color</h3>
+                  {existingColors.map((color) => (
+                    <label key={`additional-${color}`} className="file-label">
+                      Add images to color: {color}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(event) => {
+                          const files = Array.from(event.target.files || []);
+                          setAdditionalFilesByColor((current) => ({
+                            ...current,
+                            [color]: files
+                          }));
+                        }}
+                      />
+                      {additionalFilesByColor[color]?.length ? (
+                        <span>{additionalFilesByColor[color].length} files selected.</span>
+                      ) : null}
+                    </label>
+                  ))}
                 </>
               ) : null}
 
