@@ -187,7 +187,7 @@ const StorePage = () => {
   const [status, setStatus] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [currentStep, setCurrentStep] = useState("color");
-  const [selectedSizes, setSelectedSizes] = useState([]);
+  const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
 
   const currentProduct = normalizeProduct(product || fallbackProduct);
@@ -203,12 +203,10 @@ const StorePage = () => {
     { brandSize: "40", usSize: "9", euSize: "40", shoeWidth: "11.2", footLength: "10.1" }
   ];
 
-  const toggleSizeSelection = (size) => {
-    setSelectedSizes((current) => (
-      current.includes(size)
-        ? current.filter((item) => item !== size)
-        : [...current, size]
-    ));
+  const usdPrice = ((currentProduct.price_ils || 0) / 100 / 3.67).toFixed(2);
+
+  const selectSize = (size) => {
+    setSelectedSize((current) => (current === size ? "" : size));
   };
 
   const submitColorStep = async (event) => {
@@ -220,40 +218,89 @@ const StorePage = () => {
   const submitProductStep = async (event) => {
     event.preventDefault();
 
-    if (selectedSizes.length === 0) {
-      setStatus("יש לבחור לפחות מידה אחת.");
+    if (!selectedSize) {
+      setStatus("Please select one size before continuing.");
       return;
     }
 
-    setStatus(`נבחרו ${selectedSizes.length} מידות, כמות ${quantity}. ניתן להמשיך.`);
+    setStatus(`Selected size ${selectedSize}, quantity ${quantity}. You can continue to checkout.`);
   };
+
+  const resetSizeSelection = () => {
+    setSelectedSize("");
+    setStatus("");
+  };
+
+  const chooseAnotherColor = () => {
+    setCurrentStep("color");
+    setStatus("");
+  };
+
+  const SiteHeader = () => (
+    <header className="home-header">
+      <h1 className="home-title">Welcome to the store</h1>
+      <nav className="home-actions" aria-label="Main actions">
+        <button type="button">Contact</button>
+        <button type="button">About</button>
+        <button type="button">Sign in</button>
+        <button type="button">Cart</button>
+        <button type="button">Wishlist</button>
+      </nav>
+    </header>
+  );
+
+  const SiteFooter = () => (
+    <footer className="site-footer" aria-label="Updates and contact">
+      <div className="footer-block">
+        <h2>Join our updates</h2>
+        <p>Leave your email address to get perks, new products, and important updates.</p>
+        <form className="footer-subscribe-form" onSubmit={(event) => event.preventDefault()}>
+          <label htmlFor="updates-email" className="sr-only">Email address</label>
+          <input id="updates-email" name="email" type="email" placeholder="name@email.com" required />
+          <button type="submit">Subscribe for updates</button>
+        </form>
+      </div>
+
+      <div className="footer-block">
+        <h2>Contact us</h2>
+        <p>We will be happy to help with any question.</p>
+        <ul className="contact-list">
+          <li><strong>Phone:</strong> 03-555-1234</li>
+          <li><strong>Email:</strong> hello@shos.co.il</li>
+          <li><strong>WhatsApp:</strong> 050-123-4567</li>
+        </ul>
+      </div>
+    </footer>
+  );
 
   if (currentStep === "product") {
     return (
       <main className="page product-page">
-        <section className="card product-step-page" aria-label="דף מוצר">
+        <SiteHeader />
+        <section className="card product-step-page" aria-label="Product page">
           {loading ? <p>Loading product...</p> : null}
           {error ? <p className="warning">{error}</p> : null}
 
-          <h1 className="product-step-main-title">דף מוצר</h1>
+          <h1 className="product-step-main-title">Product page</h1>
 
-          <section className="product-step-image-block" aria-label="תמונת המוצר">
+          <section className="product-step-image-block" aria-label="Product image">
             <img src={displayImage} alt={currentProduct.title} className="product-image" />
             <h2 className="product-step-product-title">{currentProduct.title}</h2>
+            <p className="status">Price: ${usdPrice} USD</p>
           </section>
 
-          <section className="product-step-selection" aria-label="בחירת מידה וכמות">
-            <h3>המשך בחירת מידה וכמות</h3>
+          <section className="product-step-selection" aria-label="Size and quantity selection">
+            <h3>Select your size and quantity</h3>
 
-            <div className="size-choice-pills" role="group" aria-label="בחירת מידות">
+            <div className="size-choice-pills" role="group" aria-label="Size selection">
               {sizeChartRows.map((row) => {
-                const active = selectedSizes.includes(row.brandSize);
+                const active = selectedSize === row.brandSize;
                 return (
                   <button
                     key={`size-pill-${row.brandSize}`}
                     type="button"
                     className={`size-pill ${active ? "size-pill-active" : ""}`}
-                    onClick={() => toggleSizeSelection(row.brandSize)}
+                    onClick={() => selectSize(row.brandSize)}
                     aria-pressed={active}
                   >
                     {row.brandSize}
@@ -262,13 +309,13 @@ const StorePage = () => {
               })}
             </div>
 
-            <p className="size-selection-hint">אפשר לבחור יותר ממידה אחת</p>
+            <p className="size-selection-hint">Only one size can be selected at a time.</p>
 
-            <div className="quantity-stepper" aria-label="בחירת כמות">
+            <div className="quantity-stepper" aria-label="Quantity selection">
               <button
                 type="button"
                 onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                aria-label="הקטנת כמות"
+                aria-label="Decrease quantity"
               >
                 −
               </button>
@@ -276,35 +323,35 @@ const StorePage = () => {
               <button
                 type="button"
                 onClick={() => setQuantity((current) => current + 1)}
-                aria-label="הגדלת כמות"
+                aria-label="Increase quantity"
               >
                 +
               </button>
             </div>
 
             <form onSubmit={submitProductStep} className="order-form">
-              <button type="submit">המשך</button>
+              <button type="submit">Continue</button>
             </form>
 
             {status ? <p className="status">{status}</p> : null}
+
+            {selectedSize ? (
+              <div className="home-actions" aria-label="Next actions">
+                <button type="button" onClick={resetSizeSelection}>Choose another size</button>
+                <button type="button" onClick={chooseAnotherColor}>Choose another color</button>
+                <button type="button" onClick={() => setStatus("Proceeding to checkout...")}>Continue to checkout</button>
+              </div>
+            ) : null}
           </section>
         </section>
+        <SiteFooter />
       </main>
     );
   }
 
   return (
     <main className="page">
-      <header className="home-header">
-        <h1 className="home-title">Welcome to the store</h1>
-        <nav className="home-actions" aria-label="Main actions">
-          <button type="button">Contact</button>
-          <button type="button">About</button>
-          <button type="button">Sign in</button>
-          <button type="button">Cart</button>
-          <button type="button">Wishlist</button>
-        </nav>
-      </header>
+      <SiteHeader />
 
       <section className="hero-banner">
         <img src={homeHeroImageUrl} alt="Main banner" className="hero-banner-image" />
@@ -341,9 +388,10 @@ const StorePage = () => {
 
         <h1>{currentProduct.title}</h1>
         <p>{currentProduct.description}</p>
+        <p className="status">Price: ${usdPrice} USD</p>
 
         <form onSubmit={submitColorStep} className="order-form">
-          <button type="submit">המשך</button>
+          <button type="submit">Continue</button>
         </form>
       </section>
 
@@ -395,27 +443,7 @@ const StorePage = () => {
         <img src="/uploads/abc.jpg" alt="Promotional image top" className="stacked-home-image" />
         <img src="/uploads/dfg.jpg" alt="Promotional image bottom" className="stacked-home-image" />
       </section>
-      <footer className="site-footer" aria-label="Updates and contact">
-        <div className="footer-block">
-          <h2>Join our updates</h2>
-          <p>Leave your email address to get perks, new products, and important updates.</p>
-          <form className="footer-subscribe-form" onSubmit={(event) => event.preventDefault()}>
-            <label htmlFor="updates-email" className="sr-only">Email address</label>
-            <input id="updates-email" name="email" type="email" placeholder="name@email.com" required />
-            <button type="submit">Subscribe for updates</button>
-          </form>
-        </div>
-
-        <div className="footer-block">
-          <h2>Contact us</h2>
-          <p>We will be happy to help with any question.</p>
-          <ul className="contact-list">
-            <li><strong>Phone:</strong> 03-555-1234</li>
-            <li><strong>Email:</strong> hello@shos.co.il</li>
-            <li><strong>WhatsApp:</strong> 050-123-4567</li>
-          </ul>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 };
