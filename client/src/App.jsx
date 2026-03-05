@@ -194,14 +194,6 @@ const StorePage = () => {
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
   const selectedImageColor = currentProduct.image_entries[selectedImageIndex]?.color_name || "";
 
-  const quickActions = [
-    { label: "צור קשר", icon: "📞" },
-    { label: "אודות", icon: "ℹ️" },
-    { label: "התחבר", icon: "👤" },
-    { label: "עגלה", icon: "🛒" },
-    { label: "רשימת משאלות", icon: "💖" }
-  ];
-
   const sizeChartRows = [
     { brandSize: "35", usSize: "4", euSize: "35", shoeWidth: "9.8", footLength: "8.8" },
     { brandSize: "36", usSize: "5", euSize: "36", shoeWidth: "10.1", footLength: "9.1" },
@@ -235,6 +227,71 @@ const StorePage = () => {
 
     setStatus(`נבחרו ${selectedSizes.length} מידות, כמות ${quantity}. ניתן להמשיך.`);
   };
+
+  if (currentStep === "product") {
+    return (
+      <main className="page product-page">
+        <section className="card product-step-page" aria-label="דף מוצר">
+          {loading ? <p>Loading product...</p> : null}
+          {error ? <p className="warning">{error}</p> : null}
+
+          <h1 className="product-step-main-title">דף מוצר</h1>
+
+          <section className="product-step-image-block" aria-label="תמונת המוצר">
+            <img src={displayImage} alt={currentProduct.title} className="product-image" />
+            <h2 className="product-step-product-title">{currentProduct.title}</h2>
+          </section>
+
+          <section className="product-step-selection" aria-label="בחירת מידה וכמות">
+            <h3>המשך בחירת מידה וכמות</h3>
+
+            <div className="size-choice-pills" role="group" aria-label="בחירת מידות">
+              {sizeChartRows.map((row) => {
+                const active = selectedSizes.includes(row.brandSize);
+                return (
+                  <button
+                    key={`size-pill-${row.brandSize}`}
+                    type="button"
+                    className={`size-pill ${active ? "size-pill-active" : ""}`}
+                    onClick={() => toggleSizeSelection(row.brandSize)}
+                    aria-pressed={active}
+                  >
+                    {row.brandSize}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="size-selection-hint">אפשר לבחור יותר ממידה אחת</p>
+
+            <div className="quantity-stepper" aria-label="בחירת כמות">
+              <button
+                type="button"
+                onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                aria-label="הקטנת כמות"
+              >
+                −
+              </button>
+              <span>{quantity}</span>
+              <button
+                type="button"
+                onClick={() => setQuantity((current) => current + 1)}
+                aria-label="הגדלת כמות"
+              >
+                +
+              </button>
+            </div>
+
+            <form onSubmit={submitProductStep} className="order-form">
+              <button type="submit">המשך</button>
+            </form>
+
+            {status ? <p className="status">{status}</p> : null}
+          </section>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="page">
@@ -285,73 +342,9 @@ const StorePage = () => {
         <h1>{currentProduct.title}</h1>
         <p>{currentProduct.description}</p>
 
-        {currentStep === "color" ? (
-          <form onSubmit={submitColorStep} className="order-form">
-            <button type="submit">המשך</button>
-          </form>
-        ) : (
-          <section className="product-step" aria-label="בחירת מידות וכמות">
-            <h2>Size Chart</h2>
-            <p className="size-chart-subtitle">US Regular</p>
-
-            <div className="size-chart-table-wrap">
-              <table className="size-chart-table">
-                <thead>
-                  <tr>
-                    <th>Brand Size</th>
-                    <th>US Size</th>
-                    <th>EU Size</th>
-                    <th>Shoe Width (in)</th>
-                    <th>Foot Length (in)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sizeChartRows.map((row) => (
-                    <tr key={row.brandSize}>
-                      <td>{row.brandSize}</td>
-                      <td>{row.usSize}</td>
-                      <td>{row.euSize}</td>
-                      <td>{row.shoeWidth}</td>
-                      <td>{row.footLength}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <form onSubmit={submitProductStep} className="order-form">
-              <fieldset className="size-selector">
-                <legend>בחירת מידות (אפשר יותר ממידה אחת)</legend>
-                <div className="size-options-grid">
-                  {sizeChartRows.map((row) => (
-                    <label key={`size-option-${row.brandSize}`} className="size-option">
-                      <input
-                        type="checkbox"
-                        checked={selectedSizes.includes(row.brandSize)}
-                        onChange={() => toggleSizeSelection(row.brandSize)}
-                      />
-                      <span>{row.brandSize}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-
-              <label>
-                כמות
-                <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
-                />
-              </label>
-
-              <button type="submit">המשך</button>
-            </form>
-          </section>
-        )}
-
-        {status ? <p className="status">{status}</p> : null}
+        <form onSubmit={submitColorStep} className="order-form">
+          <button type="submit">המשך</button>
+        </form>
       </section>
 
       <section className="card product-details-panel" aria-labelledby="product-details-title">
@@ -398,12 +391,11 @@ const StorePage = () => {
         </div>
       </section>
 
-     
       <section className="card stacked-home-images" aria-label="Additional home images">
         <img src="/uploads/abc.jpg" alt="Promotional image top" className="stacked-home-image" />
         <img src="/uploads/dfg.jpg" alt="Promotional image bottom" className="stacked-home-image" />
       </section>
- <footer className="site-footer" aria-label="Updates and contact">
+      <footer className="site-footer" aria-label="Updates and contact">
         <div className="footer-block">
           <h2>Join our updates</h2>
           <p>Leave your email address to get perks, new products, and important updates.</p>
@@ -425,7 +417,6 @@ const StorePage = () => {
         </div>
       </footer>
     </main>
-
   );
 };
 
