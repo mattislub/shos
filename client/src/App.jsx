@@ -186,23 +186,112 @@ const StorePage = () => {
   const { product, homeHeroImageUrl, loading, error } = useProduct();
   const [status, setStatus] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [currentStep, setCurrentStep] = useState("color");
+  const [selectedSizes, setSelectedSizes] = useState([]);
+  const [quantity, setQuantity] = useState(1);
 
   const currentProduct = normalizeProduct(product || fallbackProduct);
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
   const selectedImageColor = currentProduct.image_entries[selectedImageIndex]?.color_name || "";
 
-  const quickActions = [
-    { label: "צור קשר", icon: "📞" },
-    { label: "אודות", icon: "ℹ️" },
-    { label: "התחבר", icon: "👤" },
-    { label: "עגלה", icon: "🛒" },
-    { label: "רשימת משאלות", icon: "💖" }
+  const sizeChartRows = [
+    { brandSize: "35", usSize: "4", euSize: "35", shoeWidth: "9.8", footLength: "8.8" },
+    { brandSize: "36", usSize: "5", euSize: "36", shoeWidth: "10.1", footLength: "9.1" },
+    { brandSize: "37", usSize: "6", euSize: "37", shoeWidth: "10.3", footLength: "9.4" },
+    { brandSize: "38", usSize: "7", euSize: "38", shoeWidth: "10.6", footLength: "9.6" },
+    { brandSize: "39", usSize: "8", euSize: "39", shoeWidth: "10.9", footLength: "9.9" },
+    { brandSize: "40", usSize: "9", euSize: "40", shoeWidth: "11.2", footLength: "10.1" }
   ];
 
-  const submitOrder = async (event) => {
-    event.preventDefault();
-    setStatus("You can continue to the next step.");
+  const toggleSizeSelection = (size) => {
+    setSelectedSizes((current) => (
+      current.includes(size)
+        ? current.filter((item) => item !== size)
+        : [...current, size]
+    ));
   };
+
+  const submitColorStep = async (event) => {
+    event.preventDefault();
+    setStatus("");
+    setCurrentStep("product");
+  };
+
+  const submitProductStep = async (event) => {
+    event.preventDefault();
+
+    if (selectedSizes.length === 0) {
+      setStatus("יש לבחור לפחות מידה אחת.");
+      return;
+    }
+
+    setStatus(`נבחרו ${selectedSizes.length} מידות, כמות ${quantity}. ניתן להמשיך.`);
+  };
+
+  if (currentStep === "product") {
+    return (
+      <main className="page product-page">
+        <section className="card product-step-page" aria-label="דף מוצר">
+          {loading ? <p>Loading product...</p> : null}
+          {error ? <p className="warning">{error}</p> : null}
+
+          <h1 className="product-step-main-title">דף מוצר</h1>
+
+          <section className="product-step-image-block" aria-label="תמונת המוצר">
+            <img src={displayImage} alt={currentProduct.title} className="product-image" />
+            <h2 className="product-step-product-title">{currentProduct.title}</h2>
+          </section>
+
+          <section className="product-step-selection" aria-label="בחירת מידה וכמות">
+            <h3>המשך בחירת מידה וכמות</h3>
+
+            <div className="size-choice-pills" role="group" aria-label="בחירת מידות">
+              {sizeChartRows.map((row) => {
+                const active = selectedSizes.includes(row.brandSize);
+                return (
+                  <button
+                    key={`size-pill-${row.brandSize}`}
+                    type="button"
+                    className={`size-pill ${active ? "size-pill-active" : ""}`}
+                    onClick={() => toggleSizeSelection(row.brandSize)}
+                    aria-pressed={active}
+                  >
+                    {row.brandSize}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="size-selection-hint">אפשר לבחור יותר ממידה אחת</p>
+
+            <div className="quantity-stepper" aria-label="בחירת כמות">
+              <button
+                type="button"
+                onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                aria-label="הקטנת כמות"
+              >
+                −
+              </button>
+              <span>{quantity}</span>
+              <button
+                type="button"
+                onClick={() => setQuantity((current) => current + 1)}
+                aria-label="הגדלת כמות"
+              >
+                +
+              </button>
+            </div>
+
+            <form onSubmit={submitProductStep} className="order-form">
+              <button type="submit">המשך</button>
+            </form>
+
+            {status ? <p className="status">{status}</p> : null}
+          </section>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="page">
@@ -250,11 +339,9 @@ const StorePage = () => {
         <h1>{currentProduct.title}</h1>
         <p>{currentProduct.description}</p>
 
-        <form onSubmit={submitOrder} className="order-form">
-          <button type="submit">Continue</button>
+        <form onSubmit={submitColorStep} className="order-form">
+          <button type="submit">המשך</button>
         </form>
-
-        {status ? <p className="status">{status}</p> : null}
       </section>
 
       <section className="card product-details-panel" aria-labelledby="product-details-title">
@@ -301,12 +388,11 @@ const StorePage = () => {
         </div>
       </section>
 
-     
       <section className="card stacked-home-images" aria-label="Additional home images">
         <img src="/uploads/abc.jpg" alt="Promotional image top" className="stacked-home-image" />
         <img src="/uploads/dfg.jpg" alt="Promotional image bottom" className="stacked-home-image" />
       </section>
- <footer className="site-footer" aria-label="Updates and contact">
+      <footer className="site-footer" aria-label="Updates and contact">
         <div className="footer-block">
           <h2>Join our updates</h2>
           <p>Leave your email address to get perks, new products, and important updates.</p>
@@ -328,7 +414,6 @@ const StorePage = () => {
         </div>
       </footer>
     </main>
-
   );
 };
 
