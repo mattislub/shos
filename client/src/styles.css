@@ -117,10 +117,18 @@ body {
   border-radius: 12px;
 }
 
+.thumb-instruction {
+  margin: 12px 0 6px;
+  color: #7c2d12;
+  font-weight: 600;
+  text-align: center;
+}
+
 .thumb-grid {
   margin-top: 10px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(132px, 148px));
+  justify-content: center;
   gap: 10px;
 }
 
@@ -135,7 +143,7 @@ body {
 
 .thumb img {
   width: 100%;
-  height: 88px;
+  height: 112px;
   object-fit: cover;
   display: block;
 }
