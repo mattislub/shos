@@ -24,6 +24,7 @@ const fallbackHomeHeroImage =
   "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=80";
 
 const apiUrl = (import.meta.env.VITE_API_URL || "/api").trim();
+const CART_STORAGE_KEY = "shos-cart-items";
 
 const serverBaseUrl = (() => {
   try {
@@ -159,6 +160,21 @@ const listUniqueColors = (entries) => {
     });
 };
 
+const readCartItems = () => {
+  try {
+    const rawValue = window.localStorage.getItem(CART_STORAGE_KEY);
+    const parsed = JSON.parse(rawValue || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_error) {
+    return [];
+  }
+};
+
+const appendCartItem = (item) => {
+  const nextItems = [...readCartItems(), item];
+  window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(nextItems));
+};
+
 const useProduct = () => {
   const [product, setProduct] = useState(null);
   const [homeHeroImageUrl, setHomeHeroImageUrl] = useState(fallbackHomeHeroImage);
@@ -245,7 +261,7 @@ const StorePage = () => {
       return;
     }
 
-    setStatus(`Selected size ${selectedSize}, quantity ${quantity}. You can continue to checkout.`);
+    setStatus(`Selected size ${selectedSize}, quantity ${quantity}. You can add this product to cart.`);
   };
 
   const resetSizeSelection = () => {
@@ -258,6 +274,25 @@ const StorePage = () => {
     setStatus("");
   };
 
+  const addCurrentSelectionToCart = () => {
+    if (!selectedSize) {
+      setStatus("Please select one size before adding to cart.");
+      return;
+    }
+
+    appendCartItem({
+      title: currentProduct.title,
+      image: displayImage,
+      color: selectedImageColor,
+      size: selectedSize,
+      quantity,
+      price_ils: currentProduct.price_ils || 0,
+      added_at: new Date().toISOString()
+    });
+
+    setStatus("Item added to cart successfully.");
+  };
+
   const SiteHeader = () => (
     <header className="home-header">
       <h1 className="home-title">Welcome to the store</h1>
@@ -265,7 +300,7 @@ const StorePage = () => {
         <button type="button">Contact</button>
         <button type="button">About</button>
         <button type="button">Sign in</button>
-        <button type="button">Cart</button>
+        <button type="button" onClick={() => window.location.assign("/cart")}>Cart</button>
         <button type="button">Wishlist</button>
       </nav>
     </header>
@@ -380,7 +415,7 @@ const StorePage = () => {
               <div className="home-actions" aria-label="Next actions">
                 <button type="button" onClick={resetSizeSelection}>Choose another size</button>
                 <button type="button" onClick={chooseAnotherColor}>Choose another color</button>
-                <button type="button" onClick={() => setStatus("Proceeding to checkout...")}>Continue to checkout</button>
+                <button type="button" onClick={addCurrentSelectionToCart}>Add to cart</button>
               </div>
             ) : null}
           </section>
@@ -841,9 +876,59 @@ const AdminPage = () => {
   );
 };
 
+const CartPage = () => {
+  const [items, setItems] = useState(() => readCartItems());
+
+  const clearCart = () => {
+    window.localStorage.removeItem(CART_STORAGE_KEY);
+    setItems([]);
+  };
+
+  const totalIls = items.reduce((sum, item) => sum + (item.price_ils || 0) * (item.quantity || 1), 0);
+
+  return (
+    <main className="page product-page">
+      <section className="home-header">
+        <h1 className="home-title">Your cart</h1>
+        <nav className="home-actions" aria-label="Cart actions">
+          <button type="button" onClick={() => window.location.assign("/")}>Back to store</button>
+          <button type="button" onClick={clearCart} disabled={items.length === 0}>Clear cart</button>
+        </nav>
+      </section>
+
+      <section className="card cart-list" aria-label="Cart items">
+        {items.length === 0 ? <p>Your cart is empty.</p> : null}
+
+        {items.map((item, index) => (
+          <article key={`${item.added_at || item.title}-${index}`} className="cart-item">
+            <img src={item.image} alt={item.title} className="cart-item-image" />
+            <div>
+              <h2>{item.title}</h2>
+              <p>Color: {item.color || "Not selected"}</p>
+              <p>Size: {item.size}</p>
+              <p>Quantity: {item.quantity}</p>
+            </div>
+          </article>
+        ))}
+
+        {items.length > 0 ? <p className="status">Total: ₪{(totalIls / 100).toFixed(2)}</p> : null}
+      </section>
+    </main>
+  );
+};
+
 function App() {
+  const isCartPage = window.location.pathname === "/cart";
   const isAdminPage = window.location.pathname === "/admin";
-  return isAdminPage ? <AdminPage /> : <StorePage />;
+  if (isAdminPage) {
+    return <AdminPage />;
+  }
+
+  if (isCartPage) {
+    return <CartPage />;
+  }
+
+  return <StorePage />;
 }
 
 export default App;
