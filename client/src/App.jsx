@@ -533,6 +533,7 @@ const AdminPage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imageColors, setImageColors] = useState({});
   const [additionalFilesByColor, setAdditionalFilesByColor] = useState({});
+  const [removedImageKeys, setRemovedImageKeys] = useState([]);
   const [activeTab, setActiveTab] = useState("product");
   const [heroFile, setHeroFile] = useState(null);
   const [status, setStatus] = useState("");
@@ -573,8 +574,12 @@ const AdminPage = () => {
   };
 
   const fileKey = (file) => `${file.name}-${file.lastModified}-${file.size}`;
+  const existingImageKey = (entry, index) => `${entry?.image_url || ""}-${entry?.color_name || ""}-${index}`;
 
   const previewProduct = normalizeProduct(product || fallbackProduct);
+  const activeImageEntries = previewProduct.image_entries.filter(
+    (entry, index) => !removedImageKeys.includes(existingImageKey(entry, index))
+  );
   const existingColors = listUniqueColors(previewProduct.image_entries);
 
   const saveProduct = async (event) => {
@@ -631,12 +636,10 @@ const AdminPage = () => {
         color_name: String(imageColors[fileKey(selectedFiles[index])] || "").trim()
       }));
 
-      const preservedImages = selectedFiles.length === 0
-        ? previewProduct.image_entries.map((entry) => ({
+      const preservedImages = activeImageEntries.map((entry) => ({
           image_url: entry.image_url,
           color_name: String(entry.color_name || "").trim()
-        }))
-        : [];
+        }));
 
       const allImagesForRequest = [
         ...preservedImages,
@@ -689,6 +692,7 @@ const AdminPage = () => {
       setSelectedFiles([]);
       setImageColors({});
       setAdditionalFilesByColor({});
+      setRemovedImageKeys([]);
       setStatus("Product saved successfully.");
     } catch (err) {
       console.error("[admin] product save exception", {
@@ -838,15 +842,31 @@ const AdminPage = () => {
 
             <h2>Active images</h2>
             <div className="thumb-grid">
-              {previewProduct.images.map((image, index) => (
-                <div key={`${image}-${index}`} className="thumb thumb-static">
-                  <img src={image} alt={`Product image ${index + 1}`} />
-                  {previewProduct.image_entries[index]?.color_name ? (
-                    <span>{previewProduct.image_entries[index].color_name}</span>
-                  ) : null}
-                </div>
-              ))}
+              {previewProduct.image_entries.map((entry, index) => {
+                const key = existingImageKey(entry, index);
+                const isRemoved = removedImageKeys.includes(key);
+                return (
+                  <div key={key} className={`thumb thumb-manageable ${isRemoved ? "thumb-removed" : ""}`}>
+                    <img src={entry.image_url} alt={`Product image ${index + 1}`} />
+                    {entry.color_name ? <span>{entry.color_name}</span> : null}
+                    <button
+                      type="button"
+                      className="thumb-action"
+                      onClick={() => {
+                        setRemovedImageKeys((current) => (
+                          isRemoved ? current.filter((item) => item !== key) : [...current, key]
+                        ));
+                      }}
+                    >
+                      {isRemoved ? "Undo delete" : "Delete image"}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
+            {removedImageKeys.length > 0 ? (
+              <p className="warning">{removedImageKeys.length} images marked for deletion. Click Save product to apply.</p>
+            ) : null}
 
             {status ? <p className="status">{status}</p> : null}
           </>
