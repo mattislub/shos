@@ -162,6 +162,27 @@ body {
   pointer-events: none;
 }
 
+.thumb-manageable {
+  gap: 4px;
+  padding-bottom: 8px;
+}
+
+.thumb-action {
+  margin: 0 8px;
+  width: calc(100% - 16px);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.thumb-removed {
+  opacity: 0.6;
+}
+
 h1 {
   margin-bottom: 8px;
 }
