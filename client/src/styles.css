@@ -115,6 +115,13 @@ body {
   height: 280px;
   object-fit: cover;
   border-radius: 12px;
+  display: block;
+}
+
+.product-page .product-image {
+  height: auto;
+  max-height: min(70vh, 520px);
+  object-fit: contain;
 }
 
 .thumb-instruction {
@@ -146,6 +153,11 @@ body {
   height: 112px;
   object-fit: cover;
   display: block;
+}
+
+.product-step-page .thumb img {
+  object-fit: contain;
+  background: #f8fafc;
 }
 
 .thumb-active {
