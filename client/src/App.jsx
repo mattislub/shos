@@ -332,7 +332,6 @@ const StorePage = () => {
       <div className="home-title-wrap">
         <p className="home-eyebrow">SHOS • new collection</p>
         <h1 className="home-title">Welcome to the store</h1>
-        <p className="home-subtitle">Minimal style, premium comfort, and fast shipping across Israel.</p>
       </div>
       <nav className="home-actions" aria-label="Main actions">
         <button type="button" className="home-action-button"><span className="home-action-icon">📞</span>Contact</button>
