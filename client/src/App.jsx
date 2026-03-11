@@ -160,6 +160,28 @@ const listUniqueColors = (entries) => {
     });
 };
 
+const listPrimaryImageIndicesByColor = (entries) => {
+  const seenColors = new Set();
+  const fallbackIndices = [];
+
+  return (Array.isArray(entries) ? entries : []).reduce((indices, entry, index) => {
+    const colorName = String(entry?.color_name || "").trim().toLowerCase();
+
+    if (!colorName) {
+      fallbackIndices.push(index);
+      return indices;
+    }
+
+    if (seenColors.has(colorName)) {
+      return indices;
+    }
+
+    seenColors.add(colorName);
+    indices.push(index);
+    return indices;
+  }, []).concat(fallbackIndices.length > 0 ? [fallbackIndices[0]] : []);
+};
+
 const readCartItems = () => {
   try {
     const rawValue = window.localStorage.getItem(CART_STORAGE_KEY);
@@ -226,6 +248,7 @@ const StorePage = () => {
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
   const selectedImageColor = currentProduct.image_entries[selectedImageIndex]?.color_name || "";
   const selectedImageColorKey = selectedImageColor.trim().toLowerCase();
+  const homeColorImageIndices = listPrimaryImageIndicesByColor(currentProduct.image_entries);
   const productStepImageIndices = currentProduct.images
     .map((_, index) => index)
     .filter((index) => {
@@ -453,11 +476,13 @@ const StorePage = () => {
 
         <img src={displayImage} alt={currentProduct.title} className="product-image" />
 
-        {currentProduct.images.length > 1 ? (
+        {homeColorImageIndices.length > 1 ? (
           <>
             <p className="thumb-instruction">Choose the color you like and click Continue.</p>
             <div className="thumb-grid">
-              {currentProduct.images.map((image, index) => (
+              {homeColorImageIndices.map((index) => {
+                const image = currentProduct.images[index];
+                return (
                 <button
                   key={`${image}-${index}`}
                   type="button"
@@ -469,7 +494,8 @@ const StorePage = () => {
                     <span>{currentProduct.image_entries[index].color_name}</span>
                   ) : null}
                 </button>
-              ))}
+                );
+              })}
             </div>
           </>
         ) : null}
