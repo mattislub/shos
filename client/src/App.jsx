@@ -450,14 +450,21 @@ const StorePage = () => {
               <button type="submit">Continue</button>
             </form>
 
-            {status ? <p className="status">{status}</p> : null}
+            {status ? <p className="status product-step-status">{status}</p> : null}
 
             {selectedSize ? (
-              <div className="home-actions" aria-label="Next actions">
-                <button type="button" onClick={resetSizeSelection}>Choose another size</button>
-                <button type="button" onClick={chooseAnotherColor}>Choose another color</button>
-                <button type="button" onClick={addCurrentSelectionToCart}>Add to cart</button>
-              </div>
+              <section className="checkout-clarity-panel" aria-label="Cart options">
+                <p className="checkout-clarity-title">Ready to add this item?</p>
+                <p className="checkout-clarity-summary">
+                  Color: <strong>{selectedImageColor || "Default"}</strong> • Size: <strong>{selectedSize}</strong> • Qty: <strong>{quantity}</strong>
+                </p>
+
+                <div className="checkout-clarity-actions">
+                  <button type="button" className="checkout-secondary" onClick={resetSizeSelection}>Change size</button>
+                  <button type="button" className="checkout-secondary" onClick={chooseAnotherColor}>Change color</button>
+                  <button type="button" className="checkout-primary" onClick={addCurrentSelectionToCart}>Add to cart</button>
+                </div>
+              </section>
             ) : null}
           </section>
         </section>
