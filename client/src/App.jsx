@@ -329,13 +329,17 @@ const StorePage = () => {
 
   const SiteHeader = () => (
     <header className="home-header">
-      <h1 className="home-title">Welcome to the store</h1>
+      <div className="home-title-wrap">
+        <p className="home-eyebrow">SHOS • new collection</p>
+        <h1 className="home-title">Welcome to the store</h1>
+        <p className="home-subtitle">Minimal style, premium comfort, and fast shipping across Israel.</p>
+      </div>
       <nav className="home-actions" aria-label="Main actions">
-        <button type="button">Contact</button>
-        <button type="button">About</button>
-        <button type="button">Sign in</button>
-        <button type="button" onClick={() => window.location.assign("/cart")}>Cart</button>
-        <button type="button">Wishlist</button>
+        <button type="button" className="home-action-button"><span className="home-action-icon">📞</span>Contact</button>
+        <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
+        <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
+        <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
+        <button type="button" className="home-action-button"><span className="home-action-icon">💖</span>Wishlist</button>
       </nav>
     </header>
   );
@@ -949,10 +953,14 @@ const CartPage = () => {
   return (
     <main className="page product-page">
       <section className="home-header">
-        <h1 className="home-title">Your cart</h1>
+        <div className="home-title-wrap">
+          <p className="home-eyebrow">SHOPPING BAG</p>
+          <h1 className="home-title">Your cart</h1>
+          <p className="home-subtitle">Review your picks before checkout.</p>
+        </div>
         <nav className="home-actions" aria-label="Cart actions">
-          <button type="button" onClick={() => window.location.assign("/")}>Back to store</button>
-          <button type="button" onClick={clearCart} disabled={items.length === 0}>Clear cart</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/")}><span className="home-action-icon">↩️</span>Back to store</button>
+          <button type="button" className="home-action-button" onClick={clearCart} disabled={items.length === 0}><span className="home-action-icon">🧹</span>Clear cart</button>
         </nav>
       </section>
 
