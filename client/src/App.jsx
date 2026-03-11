@@ -225,6 +225,17 @@ const StorePage = () => {
   const currentProduct = normalizeProduct(product || fallbackProduct);
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
   const selectedImageColor = currentProduct.image_entries[selectedImageIndex]?.color_name || "";
+  const selectedImageColorKey = selectedImageColor.trim().toLowerCase();
+  const productStepImageIndices = currentProduct.images
+    .map((_, index) => index)
+    .filter((index) => {
+      if (!selectedImageColorKey) {
+        return true;
+      }
+
+      const imageColor = String(currentProduct.image_entries[index]?.color_name || "").trim().toLowerCase();
+      return imageColor === selectedImageColorKey;
+    });
 
   useEffect(() => {
     if (selectedImageIndex >= currentProduct.images.length) {
@@ -342,9 +353,11 @@ const StorePage = () => {
 
           <section className="product-step-image-block" aria-label="Product image">
             <img src={displayImage} alt={currentProduct.title} className="product-image" />
-            {currentProduct.images.length > 1 ? (
+            {productStepImageIndices.length > 1 ? (
               <div className="thumb-grid">
-                {currentProduct.images.map((image, index) => (
+                {productStepImageIndices.map((index) => {
+                  const image = currentProduct.images[index];
+                  return (
                   <button
                     key={`step-image-${image}-${index}`}
                     type="button"
@@ -356,7 +369,8 @@ const StorePage = () => {
                       <span>{currentProduct.image_entries[index].color_name}</span>
                     ) : null}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             ) : null}
 
