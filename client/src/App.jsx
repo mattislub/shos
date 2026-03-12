@@ -243,6 +243,7 @@ const StorePage = () => {
   const [currentStep, setCurrentStep] = useState("color");
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [cartItems, setCartItems] = useState(() => readCartItems());
 
   const currentProduct = normalizeProduct(product || fallbackProduct);
   const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
@@ -265,6 +266,15 @@ const StorePage = () => {
       setSelectedImageIndex(0);
     }
   }, [currentProduct.images.length, selectedImageIndex]);
+
+  useEffect(() => {
+    const syncCartItems = () => setCartItems(readCartItems());
+    window.addEventListener("storage", syncCartItems);
+
+    return () => {
+      window.removeEventListener("storage", syncCartItems);
+    };
+  }, []);
 
   const sizeChartRows = [
     { brandSize: "35", usSize: "4", euSize: "35", shoeWidth: "9.8", footLength: "8.8" },
@@ -324,8 +334,41 @@ const StorePage = () => {
       added_at: new Date().toISOString()
     });
 
+    setCartItems(readCartItems());
     setStatus("Item added to cart successfully.");
   };
+
+  const cartSummaryItems = cartItems.map((item, index) => ({
+    ...item,
+    rowKey: `${item.added_at || item.title}-${index}`
+  }));
+  const cartTotalIls = cartItems.reduce((sum, item) => sum + (item.price_ils || 0) * (item.quantity || 1), 0);
+
+  const CartSidebar = () => (
+    <aside className="cart-sidebar" aria-label="Cart summary">
+      <h2>Cart items</h2>
+      <div className="cart-sidebar-list">
+        {cartSummaryItems.map((item) => (
+          <article key={item.rowKey} className="cart-sidebar-item">
+            <img src={item.image} alt={item.title} className="cart-sidebar-image" />
+            <div>
+              <p className="cart-sidebar-item-title">{item.title}</p>
+              <p>Size: {item.size || "Not selected"}</p>
+              <p>Qty: {item.quantity || 1}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+      <p className="cart-sidebar-total">Total: ₪{(cartTotalIls / 100).toFixed(2)}</p>
+      <button
+        type="button"
+        className="cart-sidebar-checkout"
+        onClick={() => window.location.assign("/cart")}
+      >
+        Proceed to checkout
+      </button>
+    </aside>
+  );
 
   const SiteHeader = () => (
     <header className="home-header">
@@ -370,6 +413,7 @@ const StorePage = () => {
   if (currentStep === "product") {
     return (
       <main className="page product-page">
+        {cartItems.length > 0 ? <CartSidebar /> : null}
         <SiteHeader />
         <section className="card product-step-page" aria-label="Product page">
           {loading ? <p>Loading product...</p> : null}
@@ -474,6 +518,7 @@ const StorePage = () => {
 
   return (
     <main className="page">
+      {cartItems.length > 0 ? <CartSidebar /> : null}
       <SiteHeader />
 
       <section className="hero-banner">
