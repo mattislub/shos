@@ -180,7 +180,7 @@ body {
 }
 
 .thumb-active {
-  border-color: #f97316;
+  border-color: #c8a27a;
 }
 
 .thumb span {
@@ -259,8 +259,8 @@ h1 {
 
 .order-form button {
   border: none;
-  background: #f97316;
-  color: white;
+  background: #c8a27a;
+  color: #2f2418;
   font-weight: 600;
   cursor: pointer;
 }
@@ -327,9 +327,9 @@ h1 {
 }
 
 .size-pill-active {
-  background: #f97316;
-  border-color: #f97316;
-  color: #fff;
+  background: #c8a27a;
+  border-color: #c8a27a;
+  color: #2f2418;
 }
 
 .size-selection-hint {
@@ -354,8 +354,8 @@ h1 {
   height: 34px;
   border: none;
   border-radius: 999px;
-  background: #f97316;
-  color: #fff;
+  background: #c8a27a;
+  color: #2f2418;
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
