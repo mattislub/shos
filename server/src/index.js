@@ -5,7 +5,6 @@ const path = require("path");
 require("dotenv").config();
 
 const db = require("./db");
-const { initializeDatabaseStructure } = require("./schema");
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -342,14 +341,11 @@ app.get("/api/health", (_req, res) => {
 
 const start = async () => {
   try {
-    await initializeDatabaseStructure();
-    console.log("Database structure recreated successfully");
-
     app.listen(port, () => {
       console.log(`Server listening on port ${port}`);
     });
   } catch (error) {
-    console.error("Failed to recreate database structure", error);
+    console.error("Failed to start server", error);
     process.exit(1);
   }
 };
