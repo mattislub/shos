@@ -197,6 +197,8 @@ const appendCartItem = (item) => {
   window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(nextItems));
 };
 
+const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
+
 const useProduct = () => {
   const [product, setProduct] = useState(null);
   const [homeHeroImageUrl, setHomeHeroImageUrl] = useState(fallbackHomeHeroImage);
@@ -358,11 +360,13 @@ const StorePage = () => {
               <p className="cart-sidebar-item-title">{item.title}</p>
               <p>Size: {item.size || "Not selected"}</p>
               <p>Qty: {item.quantity || 1}</p>
+              <p>Unit price: {formatUsdCents(item.price_usd || item.price_ils || 0)}</p>
+              <p>Item total: {formatUsdCents((item.price_usd || item.price_ils || 0) * (item.quantity || 1))}</p>
             </div>
           </article>
         ))}
       </div>
-      <p className="cart-sidebar-total">Total: ${(cartTotalUsd / 100).toFixed(2)} USD</p>
+      <p className="cart-sidebar-total">Total: {formatUsdCents(cartTotalUsd)}</p>
       <button
         type="button"
         className="cart-sidebar-checkout"
@@ -1031,12 +1035,14 @@ const CartPage = () => {
               <h2>{item.title}</h2>
               <p>Color: {item.color || "Not selected"}</p>
               <p>Size: {item.size}</p>
-              <p>Quantity: {item.quantity}</p>
+              <p>Quantity: {item.quantity || 1}</p>
+              <p>Price per unit: {formatUsdCents(item.price_usd || item.price_ils || 0)}</p>
+              <p>Item total: {formatUsdCents((item.price_usd || item.price_ils || 0) * (item.quantity || 1))}</p>
             </div>
           </article>
         ))}
 
-        {items.length > 0 ? <p className="status">Total: ${(totalUsd / 100).toFixed(2)} USD</p> : null}
+        {items.length > 0 ? <p className="status">Total: {formatUsdCents(totalUsd)}</p> : null}
       </section>
     </main>
   );
