@@ -11,7 +11,7 @@ const DEFAULT_PRODUCT = {
   title: "loafers",
   description:
     "נעל יומיומית קלה ונוחה במיוחד עם סוליה בולמת זעזועים, מתאימה לעבודה, הליכה ויציאות.",
-  priceIls: 29900,
+  priceUsd: 29900,
   ctaText: "אני רוצה להזמין",
   defaultImage:
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
@@ -24,14 +24,14 @@ const initializeDatabaseStructure = async () => {
   await db.query(schema);
 
   const productResult = await db.query(
-    `INSERT INTO store_products (slug, title, description, price_ils, cta_text, is_active)
+    `INSERT INTO store_products (slug, title, description, price_usd, cta_text, is_active)
      VALUES ($1, $2, $3, $4, $5, true)
      RETURNING id`,
     [
       DEFAULT_PRODUCT.slug,
       DEFAULT_PRODUCT.title,
       DEFAULT_PRODUCT.description,
-      DEFAULT_PRODUCT.priceIls,
+      DEFAULT_PRODUCT.priceUsd,
       DEFAULT_PRODUCT.ctaText
     ]
   );
