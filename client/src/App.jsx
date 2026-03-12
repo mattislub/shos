@@ -4,7 +4,7 @@ const fallbackProduct = {
   title: "loafers",
   description:
     "Water-resistant everyday loafers that are lightweight, odor-resistant, and built for all-day comfort.",
-  price_ils: 29900,
+  price_usd: 29900,
   image_url:
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80",
   images: [
@@ -285,7 +285,7 @@ const StorePage = () => {
     { brandSize: "40", usSize: "9", euSize: "40", shoeWidth: "11.2", footLength: "10.1" }
   ];
 
-  const usdPrice = ((currentProduct.price_ils || 0) / 100 / 3.67).toFixed(2);
+  const usdPrice = ((currentProduct.price_usd || 0) / 100).toFixed(2);
 
   const selectSize = (size) => {
     setSelectedSize((current) => (current === size ? "" : size));
@@ -330,7 +330,7 @@ const StorePage = () => {
       color: selectedImageColor,
       size: selectedSize,
       quantity,
-      price_ils: currentProduct.price_ils || 0,
+      price_usd: currentProduct.price_usd || 0,
       added_at: new Date().toISOString()
     });
 
@@ -342,7 +342,10 @@ const StorePage = () => {
     ...item,
     rowKey: `${item.added_at || item.title}-${index}`
   }));
-  const cartTotalIls = cartItems.reduce((sum, item) => sum + (item.price_ils || 0) * (item.quantity || 1), 0);
+  const cartTotalUsd = cartItems.reduce(
+    (sum, item) => sum + (item.price_usd || item.price_ils || 0) * (item.quantity || 1),
+    0
+  );
 
   const CartSidebar = () => (
     <aside className="cart-sidebar" aria-label="Cart summary">
@@ -359,7 +362,7 @@ const StorePage = () => {
           </article>
         ))}
       </div>
-      <p className="cart-sidebar-total">Total: ₪{(cartTotalIls / 100).toFixed(2)}</p>
+      <p className="cart-sidebar-total">Total: ${(cartTotalUsd / 100).toFixed(2)} USD</p>
       <button
         type="button"
         className="cart-sidebar-checkout"
@@ -623,7 +626,7 @@ const AdminPage = () => {
   const { product, setProduct, homeHeroImageUrl, setHomeHeroImageUrl, loading, error } = useProduct();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priceIls, setPriceIls] = useState("");
+  const [priceUsd, setPriceUsd] = useState("");
   const [ctaText, setCtaText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imageColors, setImageColors] = useState({});
@@ -638,7 +641,7 @@ const AdminPage = () => {
     const current = normalizeProduct(product || fallbackProduct);
     setTitle(current.title);
     setDescription(current.description);
-    setPriceIls(String((current.price_ils || 0) / 100));
+    setPriceUsd(String((current.price_usd || 0) / 100));
     setCtaText(current.cta_text);
   }, [product]);
 
@@ -681,7 +684,7 @@ const AdminPage = () => {
     event.preventDefault();
     setStatus("");
 
-    const parsedPrice = Number(priceIls);
+    const parsedPrice = Number(priceUsd);
     if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
       setStatus("Invalid price.");
       return;
@@ -748,7 +751,7 @@ const AdminPage = () => {
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
-          price_ils: Math.round(parsedPrice * 100),
+          price_usd: Math.round(parsedPrice * 100),
           cta_text: ctaText.trim(),
           images: allImagesForRequest
         })
@@ -875,9 +878,9 @@ const AdminPage = () => {
                 type="number"
                 min="0"
                 step="0.01"
-                value={priceIls}
-                onChange={(event) => setPriceIls(event.target.value)}
-                placeholder="Price in ILS"
+                value={priceUsd}
+                onChange={(event) => setPriceUsd(event.target.value)}
+                placeholder="Price in USD"
               />
               <input value={ctaText} onChange={(event) => setCtaText(event.target.value)} placeholder="Button text" />
               <label className="file-label">
@@ -999,7 +1002,10 @@ const CartPage = () => {
     setItems([]);
   };
 
-  const totalIls = items.reduce((sum, item) => sum + (item.price_ils || 0) * (item.quantity || 1), 0);
+  const totalUsd = items.reduce(
+    (sum, item) => sum + (item.price_usd || item.price_ils || 0) * (item.quantity || 1),
+    0
+  );
 
   return (
     <main className="page product-page">
@@ -1030,7 +1036,7 @@ const CartPage = () => {
           </article>
         ))}
 
-        {items.length > 0 ? <p className="status">Total: ₪{(totalIls / 100).toFixed(2)}</p> : null}
+        {items.length > 0 ? <p className="status">Total: ${(totalUsd / 100).toFixed(2)} USD</p> : null}
       </section>
     </main>
   );

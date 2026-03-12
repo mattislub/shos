@@ -28,7 +28,7 @@ const mapProductWithImages = (row, imageRows) => {
     slug: row.slug,
     title: row.title,
     description: row.description,
-    price_ils: row.price_ils,
+    price_usd: row.price_usd,
     cta_text: row.cta_text,
     image_url: images[0] || "",
     images,
@@ -38,7 +38,7 @@ const mapProductWithImages = (row, imageRows) => {
 
 const loadActiveProduct = async () => {
   const productResult = await db.query(
-    `SELECT id, slug, title, description, price_ils, cta_text
+    `SELECT id, slug, title, description, price_usd, cta_text
      FROM store_products
      WHERE is_active = true
      ORDER BY id
@@ -210,7 +210,7 @@ app.post("/api/orders", async (req, res) => {
 });
 
 app.put("/api/admin/product", async (req, res) => {
-  const { title, description, price_ils, cta_text, images } = req.body || {};
+  const { title, description, price_usd, cta_text, images } = req.body || {};
 
   console.info("[admin] update product request received", {
     hasTitle: Boolean(title),
@@ -224,9 +224,9 @@ app.put("/api/admin/product", async (req, res) => {
     return res.status(400).json({ message: "title, description and cta_text are required" });
   }
 
-  const parsedPrice = Number(price_ils);
+  const parsedPrice = Number(price_usd);
   if (!Number.isInteger(parsedPrice) || parsedPrice < 0) {
-    return res.status(400).json({ message: "price_ils must be a non-negative integer" });
+    return res.status(400).json({ message: "price_usd must be a non-negative integer" });
   }
 
   if (images && !Array.isArray(images)) {
@@ -272,7 +272,7 @@ app.put("/api/admin/product", async (req, res) => {
       `UPDATE store_products
        SET title = $1,
            description = $2,
-           price_ils = $3,
+           price_usd = $3,
            cta_text = $4,
            updated_at = NOW()
        WHERE id = $5`,

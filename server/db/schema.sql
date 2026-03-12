@@ -7,7 +7,7 @@ CREATE TABLE store_products (
   slug TEXT NOT NULL UNIQUE,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
-  price_ils INTEGER NOT NULL CHECK (price_ils >= 0),
+  price_usd INTEGER NOT NULL CHECK (price_usd >= 0),
   cta_text TEXT NOT NULL,
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
