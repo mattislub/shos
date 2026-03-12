@@ -8,7 +8,7 @@ const schema = fs.readFileSync(schemaPath, "utf8");
 
 const DEFAULT_PRODUCT = {
   slug: "single-offer",
-  title: "סניקרס Horizon X",
+  title: "loafers",
   description:
     "נעל יומיומית קלה ונוחה במיוחד עם סוליה בולמת זעזועים, מתאימה לעבודה, הליכה ויציאות.",
   priceIls: 29900,
