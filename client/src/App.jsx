@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const fallbackProduct = {
-  title: "Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women",
+  title: "loafers",
   description:
     "Water-resistant everyday loafers that are lightweight, odor-resistant, and built for all-day comfort.",
   price_ils: 29900,
