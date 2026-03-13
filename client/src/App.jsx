@@ -246,7 +246,7 @@ const useProduct = () => {
 const GlobalHeader = () => (
   <header className="home-header">
     <div className="home-title-wrap">
-      <h1 className="home-title">Sholors - loafers</h1>
+      <h1 className="home-title">Sholors-Loafers</h1>
       <p className="home-eyebrow">Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women</p>
     </div>
     <nav className="home-actions" aria-label="Main actions">
