@@ -365,7 +365,6 @@ h1 {
 }
 
 .product-step-page {
-  max-width: 760px;
   display: grid;
   gap: 18px;
 }
@@ -819,7 +818,7 @@ h1 {
 
 .shipping-card,
 .policy-card {
-  width: min(700px, 100%);
+  width: min(var(--content-max-width), 100%);
 }
 
 .shipping-card input,
