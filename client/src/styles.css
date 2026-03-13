@@ -29,7 +29,7 @@ body {
   align-items: start;
   justify-content: center;
   column-gap: 18px;
-  grid-auto-flow: row dense;
+  padding-right: clamp(280px, 30vw, 360px);
 }
 
 .page:has(.cart-sidebar) > :not(.cart-sidebar) {
@@ -38,10 +38,11 @@ body {
 
 .cart-sidebar {
   grid-column: 2;
-  position: sticky;
+  position: fixed;
   top: 24px;
   align-self: start;
-  width: min(320px, 100%);
+  width: min(320px, calc(100vw - 48px));
+  right: 24px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
@@ -715,6 +716,7 @@ h1 {
 
   .cart-sidebar {
     position: static;
+    right: auto;
     width: min(var(--content-max-width), 100%);
   }
 
