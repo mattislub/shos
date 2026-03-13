@@ -12,6 +12,8 @@ const port = process.env.PORT || 3001;
 const uploadsDir = path.join(__dirname, "..", "uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
+let productPriceColumnPromise;
+
 app.use(cors());
 app.use(express.json({ limit: "25mb" }));
 app.use("/uploads", express.static(uploadsDir));
@@ -35,9 +37,41 @@ const mapProductWithImages = (row, imageRows) => {
   };
 };
 
+const resolveProductPriceColumn = async () => {
+  if (!productPriceColumnPromise) {
+    productPriceColumnPromise = (async () => {
+      const columnResult = await db.query(
+        `SELECT column_name
+         FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'store_products'
+           AND column_name IN ('price_usd', 'price_ils')`
+      );
+
+      const columnNames = columnResult.rows.map((row) => row.column_name);
+
+      if (columnNames.includes("price_usd")) {
+        return "price_usd";
+      }
+
+      if (columnNames.includes("price_ils")) {
+        return "price_ils";
+      }
+
+      throw new Error("Missing expected price column on store_products");
+    })().catch((error) => {
+      productPriceColumnPromise = undefined;
+      throw error;
+    });
+  }
+
+  return productPriceColumnPromise;
+};
+
 const loadActiveProduct = async () => {
+  const priceColumn = await resolveProductPriceColumn();
   const productResult = await db.query(
-    `SELECT id, slug, title, description, price_usd, cta_text
+    `SELECT id, slug, title, description, ${priceColumn} AS price_usd, cta_text
      FROM store_products
      WHERE is_active = true
      ORDER BY id
@@ -253,6 +287,8 @@ app.put("/api/admin/product", async (req, res) => {
   let isTransactionOpen = false;
 
   try {
+    const priceColumn = await resolveProductPriceColumn();
+
     await dbClient.query("BEGIN");
     isTransactionOpen = true;
 
@@ -271,7 +307,7 @@ app.put("/api/admin/product", async (req, res) => {
       `UPDATE store_products
        SET title = $1,
            description = $2,
-           price_usd = $3,
+           ${priceColumn} = $3,
            cta_text = $4,
            updated_at = NOW()
        WHERE id = $5`,
