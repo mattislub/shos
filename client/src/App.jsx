@@ -197,6 +197,10 @@ const appendCartItem = (item) => {
   window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(nextItems));
 };
 
+const writeCartItems = (items) => {
+  window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+};
+
 const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
 
 const useProduct = () => {
@@ -326,10 +330,25 @@ const StorePage = () => {
       return;
     }
 
+    const colorOptions = listUniqueColors(currentProduct.image_entries);
+    const imagesByColor = currentProduct.image_entries.reduce((result, entry) => {
+      const colorName = String(entry?.color_name || "").trim();
+      if (!colorName || result[colorName]) {
+        return result;
+      }
+
+      return {
+        ...result,
+        [colorName]: entry.image_url
+      };
+    }, {});
+
     appendCartItem({
       title: currentProduct.title,
       image: displayImage,
       color: selectedImageColor,
+      color_options: colorOptions,
+      images_by_color: imagesByColor,
       size: selectedSize,
       quantity,
       price_usd: currentProduct.price_usd || 0,
@@ -1001,9 +1020,38 @@ const AdminPage = () => {
 const CartPage = () => {
   const [items, setItems] = useState(() => readCartItems());
 
+  const persistItems = (nextItems) => {
+    setItems(nextItems);
+    writeCartItems(nextItems);
+  };
+
   const clearCart = () => {
-    window.localStorage.removeItem(CART_STORAGE_KEY);
-    setItems([]);
+    persistItems([]);
+  };
+
+  const removeItem = (itemIndex) => {
+    persistItems(items.filter((_, index) => index !== itemIndex));
+  };
+
+  const updateItemQuantity = (itemIndex, nextQuantity) => {
+    const sanitizedQuantity = Math.max(1, nextQuantity);
+    persistItems(items.map((item, index) => (
+      index === itemIndex ? { ...item, quantity: sanitizedQuantity } : item
+    )));
+  };
+
+  const updateItemColor = (itemIndex, nextColor) => {
+    persistItems(items.map((item, index) => {
+      if (index !== itemIndex) {
+        return item;
+      }
+
+      return {
+        ...item,
+        color: nextColor,
+        image: item.images_by_color?.[nextColor] || item.image
+      };
+    }));
   };
 
   const totalUsd = items.reduce(
@@ -1038,6 +1086,43 @@ const CartPage = () => {
               <p>Quantity: {item.quantity || 1}</p>
               <p>Price per unit: {formatUsdCents(item.price_usd || item.price_ils || 0)}</p>
               <p>Item total: {formatUsdCents((item.price_usd || item.price_ils || 0) * (item.quantity || 1))}</p>
+              <div className="cart-item-actions">
+                <div className="cart-qty-controls" role="group" aria-label={`Update quantity for ${item.title}`}>
+                  <button
+                    type="button"
+                    className="home-action-button"
+                    onClick={() => updateItemQuantity(index, (item.quantity || 1) - 1)}
+                  >
+                    −
+                  </button>
+                  <span>{item.quantity || 1}</span>
+                  <button
+                    type="button"
+                    className="home-action-button"
+                    onClick={() => updateItemQuantity(index, (item.quantity || 1) + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+
+                {Array.isArray(item.color_options) && item.color_options.length > 0 ? (
+                  <label>
+                    Color
+                    <select
+                      value={item.color || item.color_options[0]}
+                      onChange={(event) => updateItemColor(index, event.target.value)}
+                    >
+                      {item.color_options.map((colorOption) => (
+                        <option key={colorOption} value={colorOption}>{colorOption}</option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+
+                <button type="button" className="home-action-button" onClick={() => removeItem(index)}>
+                  Remove item
+                </button>
+              </div>
             </div>
           </article>
         ))}
