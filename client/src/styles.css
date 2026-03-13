@@ -649,6 +649,35 @@ h1 {
   border: 0;
 }
 
+
+.admin-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.admin-table th,
+.admin-table td {
+  border: 1px solid #e5e7eb;
+  padding: 10px;
+  text-align: left;
+}
+
+.admin-table th {
+  background: #f8fafc;
+}
+
 .admin-tabs {
   display: flex;
   gap: 8px;

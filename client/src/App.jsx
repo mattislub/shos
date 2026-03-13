@@ -202,6 +202,7 @@ const writeCartItems = (items) => {
 };
 
 const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
+const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : "-");
 
 const useProduct = () => {
   const [product, setProduct] = useState(null);
@@ -868,6 +869,12 @@ const AdminPage = () => {
         {loading ? <p>Loading product...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
 
+        <div className="admin-links" aria-label="Admin sections">
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/orders")}>Order management</button>
+        </div>
+
         <div className="admin-tabs" role="tablist" aria-label="Management tabs">
           <button
             type="button"
@@ -1014,6 +1021,172 @@ const AdminPage = () => {
             {heroStatus ? <p className="status">{heroStatus}</p> : null}
           </>
         )}
+      </section>
+      <SiteFooter />
+    </main>
+  );
+};
+
+const AdminCustomersPage = () => {
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadCustomers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${apiUrl}/admin/customers`, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error("customers load failed");
+        }
+
+        const payload = await response.json();
+        setCustomers(Array.isArray(payload.customers) ? payload.customers : []);
+      } catch (loadError) {
+        if (loadError.name !== "AbortError") {
+          setError("Could not load customers.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCustomers();
+    return () => controller.abort();
+  }, []);
+
+  return (
+    <main className="page product-page">
+      <GlobalHeader />
+      <section className="card">
+        <h1>Customer management</h1>
+        <div className="admin-links" aria-label="Admin sections">
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/orders")}>Order management</button>
+        </div>
+
+        {loading ? <p>Loading customers...</p> : null}
+        {error ? <p className="warning">{error}</p> : null}
+
+        {!loading ? (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Total orders</th>
+                  <th>Total items</th>
+                  <th>Last order</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>No customers yet.</td>
+                  </tr>
+                ) : customers.map((customer) => (
+                  <tr key={customer.phone}>
+                    <td>{customer.customer_name}</td>
+                    <td>{customer.phone}</td>
+                    <td>{customer.total_orders}</td>
+                    <td>{customer.total_items}</td>
+                    <td>{formatDateTime(customer.last_order_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </section>
+      <SiteFooter />
+    </main>
+  );
+};
+
+const AdminOrdersPage = () => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${apiUrl}/admin/orders`, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error("orders load failed");
+        }
+
+        const payload = await response.json();
+        setOrders(Array.isArray(payload.orders) ? payload.orders : []);
+      } catch (loadError) {
+        if (loadError.name !== "AbortError") {
+          setError("Could not load orders.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
+    return () => controller.abort();
+  }, []);
+
+  return (
+    <main className="page product-page">
+      <GlobalHeader />
+      <section className="card">
+        <h1>Order management</h1>
+        <div className="admin-links" aria-label="Admin sections">
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/orders")}>Order management</button>
+        </div>
+
+        {loading ? <p>Loading orders...</p> : null}
+        {error ? <p className="warning">{error}</p> : null}
+
+        {!loading ? (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Customer</th>
+                  <th>Phone</th>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Status</th>
+                  <th>Created at</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>No orders yet.</td>
+                  </tr>
+                ) : orders.map((order) => (
+                  <tr key={order.id}>
+                    <td>{order.id}</td>
+                    <td>{order.customer_name}</td>
+                    <td>{order.phone}</td>
+                    <td>{order.product_title}</td>
+                    <td>{order.quantity}</td>
+                    <td>{order.status}</td>
+                    <td>{formatDateTime(order.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </section>
       <SiteFooter />
     </main>
@@ -1244,8 +1417,18 @@ const PrivacyShippingPolicyPage = () => (
 function App() {
   const isCartPage = window.location.pathname === "/cart";
   const isAdminPage = window.location.pathname === "/admin";
+  const isAdminCustomersPage = window.location.pathname === "/admin/customers";
+  const isAdminOrdersPage = window.location.pathname === "/admin/orders";
   const isShippingDetailsPage = window.location.pathname === "/shipping-details";
   const isPolicyPage = window.location.pathname === "/privacy-shipping-policy";
+  if (isAdminCustomersPage) {
+    return <AdminCustomersPage />;
+  }
+
+  if (isAdminOrdersPage) {
+    return <AdminOrdersPage />;
+  }
+
   if (isAdminPage) {
     return <AdminPage />;
   }
