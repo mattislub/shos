@@ -703,6 +703,28 @@ h1 {
   line-height: 1.65;
 }
 
+
+.cart-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cart-qty-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-item-actions select {
+  margin-inline-start: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px;
+}
+
 @media (max-width: 768px) {
   .page:has(.cart-sidebar) {
     grid-template-columns: 1fr;
