@@ -238,6 +238,47 @@ const useProduct = () => {
   return { product, setProduct, homeHeroImageUrl, setHomeHeroImageUrl, loading, error };
 };
 
+
+const GlobalHeader = () => (
+  <header className="home-header">
+    <div className="home-title-wrap">
+      <h1 className="home-title">Sholors - loafers</h1>
+      <p className="home-eyebrow">Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women</p>
+    </div>
+    <nav className="home-actions" aria-label="Main actions">
+      <button type="button" className="home-action-button"><span className="home-action-icon">📞</span>Contact</button>
+      <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
+      <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
+      <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
+      <button type="button" className="home-action-button"><span className="home-action-icon">💖</span>Wishlist</button>
+    </nav>
+  </header>
+);
+
+const SiteFooter = () => (
+  <footer className="site-footer" aria-label="Updates and contact">
+    <div className="footer-block">
+      <h2>Join our updates</h2>
+      <p>Leave your email address to get perks, new products, and important updates.</p>
+      <form className="footer-subscribe-form" onSubmit={(event) => event.preventDefault()}>
+        <label htmlFor="updates-email" className="sr-only">Email address</label>
+        <input id="updates-email" name="email" type="email" placeholder="name@email.com" required />
+        <button type="submit">Subscribe for updates</button>
+      </form>
+    </div>
+
+    <div className="footer-block">
+      <h2>Contact us</h2>
+      <p>We will be happy to help with any question.</p>
+      <ul className="contact-list">
+        <li><strong>Phone:</strong> 03-555-1234</li>
+        <li><strong>Email:</strong> hello@shos.co.il</li>
+        <li><strong>WhatsApp:</strong> 050-123-4567</li>
+      </ul>
+    </div>
+  </footer>
+);
+
 const StorePage = () => {
   const { product, homeHeroImageUrl, loading, error } = useProduct();
   const [status, setStatus] = useState("");
@@ -377,51 +418,12 @@ const StorePage = () => {
     </aside>
   );
 
-  const SiteHeader = () => (
-    <header className="home-header">
-      <div className="home-title-wrap">
-        <h1 className="home-title">Sholors - loafers</h1>
-        <p className="home-eyebrow">Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women</p>
-      </div>
-      <nav className="home-actions" aria-label="Main actions">
-        <button type="button" className="home-action-button"><span className="home-action-icon">📞</span>Contact</button>
-        <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
-        <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
-        <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
-        <button type="button" className="home-action-button"><span className="home-action-icon">💖</span>Wishlist</button>
-      </nav>
-    </header>
-  );
-
-  const SiteFooter = () => (
-    <footer className="site-footer" aria-label="Updates and contact">
-      <div className="footer-block">
-        <h2>Join our updates</h2>
-        <p>Leave your email address to get perks, new products, and important updates.</p>
-        <form className="footer-subscribe-form" onSubmit={(event) => event.preventDefault()}>
-          <label htmlFor="updates-email" className="sr-only">Email address</label>
-          <input id="updates-email" name="email" type="email" placeholder="name@email.com" required />
-          <button type="submit">Subscribe for updates</button>
-        </form>
-      </div>
-
-      <div className="footer-block">
-        <h2>Contact us</h2>
-        <p>We will be happy to help with any question.</p>
-        <ul className="contact-list">
-          <li><strong>Phone:</strong> 03-555-1234</li>
-          <li><strong>Email:</strong> hello@shos.co.il</li>
-          <li><strong>WhatsApp:</strong> 050-123-4567</li>
-        </ul>
-      </div>
-    </footer>
-  );
 
   if (currentStep === "product") {
     return (
       <main className="page product-page">
         {cartItems.length > 0 ? <CartSidebar /> : null}
-        <SiteHeader />
+        <GlobalHeader />
         <section className="card product-step-page" aria-label="Product page">
           {loading ? <p>Loading product...</p> : null}
           {error ? <p className="warning">{error}</p> : null}
@@ -526,7 +528,7 @@ const StorePage = () => {
   return (
     <main className="page">
       {cartItems.length > 0 ? <CartSidebar /> : null}
-      <SiteHeader />
+      <GlobalHeader />
 
       <section className="hero-banner">
         <img src={homeHeroImageUrl} alt="Main banner" className="hero-banner-image" />
@@ -994,6 +996,7 @@ const AdminPage = () => {
           </>
         )}
       </section>
+      <SiteFooter />
     </main>
   );
 };
@@ -1013,16 +1016,16 @@ const CartPage = () => {
 
   return (
     <main className="page product-page">
-      <section className="home-header">
-        <div className="home-title-wrap">
-          <p className="home-eyebrow">SHOPPING BAG</p>
-          <h1 className="home-title">Your cart</h1>
-          <p className="home-subtitle">Review your picks before checkout.</p>
-        </div>
-        <nav className="home-actions" aria-label="Cart actions">
+      <GlobalHeader />
+
+      <section className="card cart-actions-card" aria-label="Cart actions">
+        <p className="home-eyebrow">SHOPPING BAG</p>
+        <h2 className="product-step-main-title">Your cart</h2>
+        <p className="home-subtitle">Review your picks before checkout.</p>
+        <div className="home-actions" aria-label="Cart actions">
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/")}><span className="home-action-icon">↩️</span>Back to store</button>
           <button type="button" className="home-action-button" onClick={clearCart} disabled={items.length === 0}><span className="home-action-icon">🧹</span>Clear cart</button>
-        </nav>
+        </div>
       </section>
 
       <section className="card cart-list" aria-label="Cart items">
@@ -1043,16 +1046,131 @@ const CartPage = () => {
         ))}
 
         {items.length > 0 ? <p className="status">Total: {formatUsdCents(totalUsd)}</p> : null}
+
+        {items.length > 0 ? (
+          <button
+            type="button"
+            className="checkout-next-button"
+            onClick={() => window.location.assign("/shipping-details")}
+          >
+            Continue to shipping details
+          </button>
+        ) : null}
+
+        <button
+          type="button"
+          className="checkout-link-button"
+          onClick={() => window.location.assign("/privacy-shipping-policy")}
+        >
+          Privacy & shipping policy
+        </button>
       </section>
     </main>
   );
 };
 
+const ShippingDetailsPage = () => {
+  const [isPaymentNoticeOpen, setIsPaymentNoticeOpen] = useState(false);
+
+  const submitShippingDetails = (event) => {
+    event.preventDefault();
+    setIsPaymentNoticeOpen(true);
+  };
+
+  return (
+    <main className="page product-page">
+      <GlobalHeader />
+
+      <section className="card shipping-card">
+        <p className="home-eyebrow">CHECKOUT</p>
+        <h2 className="product-step-main-title">Shipping details</h2>
+        <p className="home-subtitle">Fill in all required fields for shipping within the United States.</p>
+
+        <form className="order-form" onSubmit={submitShippingDetails}>
+          <input name="firstName" autoComplete="given-name" required placeholder="First name" />
+          <input name="lastName" autoComplete="family-name" required placeholder="Last name" />
+          <input name="phone" type="tel" autoComplete="tel" required placeholder="Phone number" />
+          <input name="email" type="email" autoComplete="email" required placeholder="Email" />
+          <input name="addressLine1" autoComplete="address-line1" required placeholder="Street address" />
+          <input name="addressLine2" autoComplete="address-line2" placeholder="Apartment, suite, unit, building (optional)" />
+          <input name="city" autoComplete="address-level2" required placeholder="City" />
+          <select name="state" required defaultValue="">
+            <option value="" disabled>Select state</option>
+            {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC"].map((stateCode) => (
+              <option key={stateCode} value={stateCode}>{stateCode}</option>
+            ))}
+          </select>
+          <input name="zip" inputMode="numeric" autoComplete="postal-code" required placeholder="ZIP code" pattern="[0-9]{5}(-[0-9]{4})?" title="Use ZIP format 12345 or 12345-6789" />
+          <input name="country" required defaultValue="United States" readOnly />
+          <textarea name="deliveryNotes" rows="3" placeholder="Delivery notes (optional)" />
+          <button type="submit">Continue to payment</button>
+        </form>
+      </section>
+
+      {isPaymentNoticeOpen ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => setIsPaymentNoticeOpen(false)}>
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Payment status"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2>Online payment is not available yet</h2>
+            <p>We are still working on online checkout. Please leave your shipping details and we will contact you to complete the order.</p>
+            <button type="button" onClick={() => setIsPaymentNoticeOpen(false)}>Close</button>
+          </div>
+        </div>
+      ) : null}
+      <SiteFooter />
+    </main>
+  );
+};
+
+const PrivacyShippingPolicyPage = () => (
+  <main className="page product-page">
+    <GlobalHeader />
+
+    <section className="card policy-card">
+      <p className="home-eyebrow">POLICY</p>
+      <h2 className="product-step-main-title">Privacy & shipping policy</h2>
+
+      <h3>Privacy policy</h3>
+      <p>We respect your privacy and protect personal information provided through this website.</p>
+      <ul className="details-list">
+        <li>We collect information needed to process orders, provide support, and improve our service.</li>
+        <li>We do not sell personal information to third parties.</li>
+        <li>We only share relevant data with shipping and service providers required to complete your order.</li>
+        <li>You may contact us to request access, correction, or deletion of your personal data.</li>
+      </ul>
+
+      <h3>Shipping policy</h3>
+      <ul className="details-list">
+        <li>Estimated delivery time is 3-7 business days for most U.S. destinations.</li>
+        <li>Delivery times may vary during holidays, peak periods, weather events, or carrier delays.</li>
+        <li>Please ensure your shipping details are accurate to avoid delivery issues.</li>
+        <li>If a shipment is delayed or returned, our support team will contact you with next steps.</li>
+      </ul>
+    </section>
+    <SiteFooter />
+  </main>
+);
+
 function App() {
   const isCartPage = window.location.pathname === "/cart";
   const isAdminPage = window.location.pathname === "/admin";
+  const isShippingDetailsPage = window.location.pathname === "/shipping-details";
+  const isPolicyPage = window.location.pathname === "/privacy-shipping-policy";
   if (isAdminPage) {
     return <AdminPage />;
+  }
+
+  if (isShippingDetailsPage) {
+    return <ShippingDetailsPage />;
+  }
+
+  if (isPolicyPage) {
+    return <PrivacyShippingPolicyPage />;
   }
 
   if (isCartPage) {
