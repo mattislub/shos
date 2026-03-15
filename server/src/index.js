@@ -5,6 +5,11 @@ const path = require("path");
 require("dotenv").config();
 
 const db = require("./db");
+const {
+  hasSmtpConfig,
+  sendOrderNotificationEmail,
+  sendCustomerOrderConfirmationEmail
+} = require("./mailer");
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -238,10 +243,18 @@ app.put("/api/admin/home-hero", requireAdminAuth, async (req, res) => {
 });
 
 app.post("/api/orders", async (req, res) => {
-  const { customer_name, phone, quantity } = req.body || {};
+  const { customer_name, phone, quantity, customer_email } = req.body || {};
 
   if (!customer_name || !phone) {
     return res.status(400).json({ message: "customer_name and phone are required" });
+  }
+
+  const cleanedCustomerEmail = customer_email ? String(customer_email).trim().toLowerCase() : "";
+  if (cleanedCustomerEmail) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(cleanedCustomerEmail)) {
+      return res.status(400).json({ message: "customer_email must be a valid email" });
+    }
   }
 
   const parsedQuantity = Number(quantity);
@@ -251,7 +264,7 @@ app.post("/api/orders", async (req, res) => {
 
   try {
     const productResult = await db.query(
-      "SELECT id FROM store_products WHERE is_active = true ORDER BY id LIMIT 1"
+      "SELECT id, title FROM store_products WHERE is_active = true ORDER BY id LIMIT 1"
     );
 
     const product = productResult.rows[0];
@@ -259,14 +272,60 @@ app.post("/api/orders", async (req, res) => {
       return res.status(404).json({ message: "No active product found" });
     }
 
+    const cleanedCustomerName = String(customer_name).trim();
+    const cleanedPhone = String(phone).trim();
+
     const orderResult = await db.query(
       `INSERT INTO store_orders (product_id, customer_name, phone, quantity)
        VALUES ($1, $2, $3, $4)
        RETURNING id, status, created_at`,
-      [product.id, String(customer_name).trim(), String(phone).trim(), parsedQuantity]
+      [product.id, cleanedCustomerName, cleanedPhone, parsedQuantity]
     );
 
-    return res.status(201).json({ order: orderResult.rows[0] });
+    const order = orderResult.rows[0];
+
+    try {
+      const emailResult = await sendOrderNotificationEmail({
+        orderId: order.id,
+        customerName: cleanedCustomerName,
+        phone: cleanedPhone,
+        quantity: parsedQuantity,
+        productTitle: product.title,
+        createdAt: order.created_at
+      });
+
+      if (emailResult.skipped) {
+        console.info("Order created without email notification", {
+          orderId: order.id,
+          reason: emailResult.reason
+        });
+      }
+    } catch (emailError) {
+      console.error("Order created but failed to send notification email", {
+        orderId: order.id,
+        message: emailError?.message
+      });
+    }
+
+    if (cleanedCustomerEmail) {
+      try {
+        await sendCustomerOrderConfirmationEmail({
+          orderId: order.id,
+          customerName: cleanedCustomerName,
+          customerEmail: cleanedCustomerEmail,
+          quantity: parsedQuantity,
+          productTitle: product.title
+        });
+      } catch (customerEmailError) {
+        console.error("Order created but failed to send customer confirmation email", {
+          orderId: order.id,
+          customerEmail: cleanedCustomerEmail,
+          message: customerEmailError?.message
+        });
+      }
+    }
+
+    return res.status(201).json({ order });
   } catch (error) {
     console.error("Failed to create order", error);
     return res.status(500).json({ message: "Failed to create order" });
@@ -448,7 +507,7 @@ app.get("/api/admin/customers", requireAdminAuth, async (_req, res) => {
 });
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, smtpConfigured: hasSmtpConfig() });
 });
 
 const start = async () => {
