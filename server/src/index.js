@@ -434,7 +434,12 @@ app.get("/api/admin/customers", requireAdminAuth, async (_req, res) => {
          (ARRAY_AGG(customer_name ORDER BY created_at DESC))[1] AS customer_name,
          COUNT(*)::INTEGER AS total_orders,
          COALESCE(SUM(quantity), 0)::INTEGER AS total_items,
-         MAX(created_at) AS last_order_at
+         MAX(created_at) AS last_order_at,
+         CASE
+           WHEN MAX(created_at) >= NOW() - INTERVAL '7 days' THEN 'active'
+           WHEN MAX(created_at) >= NOW() - INTERVAL '30 days' THEN 'at_risk'
+           ELSE 'inactive'
+         END AS visitor_status
        FROM store_orders
        GROUP BY phone
        ORDER BY MAX(created_at) DESC`
