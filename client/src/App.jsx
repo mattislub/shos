@@ -206,6 +206,140 @@ const writeCartItems = (items) => {
 const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : "-");
 
+const SITE_NAME = "Sholors-Loafers";
+const DEFAULT_SEO_IMAGE =
+  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80";
+
+const buildAbsoluteUrl = (path = "/") => {
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${window.location.origin}${cleanPath}`;
+};
+
+const SEO_BY_PATH = {
+  "/": {
+    title: "Sholors-Loafers | Lightweight Everyday Comfort Shoes",
+    description:
+      "Discover water-resistant, lightweight, and odor-resistant loafers designed for all-day comfort.",
+    keywords: "loafers, comfortable shoes, women loafers, lightweight shoes, non-slip shoes"
+  },
+  "/cart": {
+    title: "Shopping Cart | Sholors-Loafers",
+    description: "Review your selected loafers, adjust quantities, and continue to secure checkout.",
+    keywords: "shopping cart, loafers checkout, shoe order"
+  },
+  "/shipping-details": {
+    title: "Shipping Details | Sholors-Loafers Checkout",
+    description: "Enter shipping details to complete your loafers order quickly and accurately.",
+    keywords: "shipping details, checkout, loafers delivery"
+  },
+  "/privacy-shipping-policy": {
+    title: "Privacy & Shipping Policy | Sholors-Loafers",
+    description: "Read our privacy terms and shipping policy for orders across the United States.",
+    keywords: "privacy policy, shipping policy, online store terms"
+  },
+  "/admin": {
+    title: "Admin Product Management | Sholors-Loafers",
+    description: "Manage product details, images, and homepage banner content.",
+    keywords: "admin, product management, ecommerce dashboard",
+    robots: "noindex,nofollow,noarchive,nosnippet,max-image-preview:none"
+  },
+  "/admin/customers": {
+    title: "Admin Customer Management | Sholors-Loafers",
+    description: "View customer activity and order history in the admin dashboard.",
+    keywords: "admin customers, customer analytics, ecommerce admin",
+    robots: "noindex,nofollow,noarchive,nosnippet,max-image-preview:none"
+  },
+  "/admin/orders": {
+    title: "Admin Order Management | Sholors-Loafers",
+    description: "Track and manage orders with status and customer details.",
+    keywords: "admin orders, order management, ecommerce operations",
+    robots: "noindex,nofollow,noarchive,nosnippet,max-image-preview:none"
+  }
+};
+
+const upsertMetaTag = (name, content, attribute = "name") => {
+  if (!content) {
+    return;
+  }
+
+  let element = document.head.querySelector(`meta[${attribute}="${name}"]`);
+  if (!element) {
+    element = document.createElement("meta");
+    element.setAttribute(attribute, name);
+    document.head.appendChild(element);
+  }
+
+  element.setAttribute("content", content);
+};
+
+const upsertLinkTag = (rel, href) => {
+  if (!href) {
+    return;
+  }
+
+  let element = document.head.querySelector(`link[rel="${rel}"]`);
+  if (!element) {
+    element = document.createElement("link");
+    element.setAttribute("rel", rel);
+    document.head.appendChild(element);
+  }
+
+  element.setAttribute("href", href);
+};
+
+const setJsonLd = (path, data) => {
+  const scriptId = `seo-json-ld-${path.replace(/[^a-z0-9]/gi, "-") || "home"}`;
+  let script = document.head.querySelector(`#${scriptId}`);
+  if (!script) {
+    script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = scriptId;
+    document.head.appendChild(script);
+  }
+
+  script.textContent = JSON.stringify(data);
+};
+
+const applyPageSeo = (path) => {
+  const seoData = SEO_BY_PATH[path] || SEO_BY_PATH["/"];
+  const canonical = buildAbsoluteUrl(path);
+  const robotsContent = seoData.robots || "index,follow,max-image-preview:large";
+
+  document.title = seoData.title;
+
+  upsertMetaTag("description", seoData.description);
+  upsertMetaTag("keywords", seoData.keywords);
+  upsertMetaTag("robots", robotsContent);
+  upsertMetaTag("googlebot", robotsContent);
+
+  upsertMetaTag("og:type", "website", "property");
+  upsertMetaTag("og:site_name", SITE_NAME, "property");
+  upsertMetaTag("og:title", seoData.title, "property");
+  upsertMetaTag("og:description", seoData.description, "property");
+  upsertMetaTag("og:url", canonical, "property");
+  upsertMetaTag("og:image", DEFAULT_SEO_IMAGE, "property");
+
+  upsertMetaTag("twitter:card", "summary_large_image");
+  upsertMetaTag("twitter:title", seoData.title);
+  upsertMetaTag("twitter:description", seoData.description);
+  upsertMetaTag("twitter:image", DEFAULT_SEO_IMAGE);
+
+  upsertLinkTag("canonical", canonical);
+
+  setJsonLd(path, {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: seoData.title,
+    description: seoData.description,
+    url: canonical,
+    isPartOf: {
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: buildAbsoluteUrl("/")
+    }
+  });
+};
+
 const buildAdminBasicToken = (username, password) => window.btoa(`${username}:${password}`);
 
 const readAdminToken = () => {
@@ -1521,6 +1655,10 @@ const PrivacyShippingPolicyPage = () => (
 );
 
 function App() {
+  useEffect(() => {
+    applyPageSeo(window.location.pathname);
+  }, []);
+
   const isCartPage = window.location.pathname === "/cart";
   const isAdminPage = window.location.pathname === "/admin";
   const isAdminCustomersPage = window.location.pathname === "/admin/customers";
