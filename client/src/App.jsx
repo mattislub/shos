@@ -206,6 +206,14 @@ const writeCartItems = (items) => {
 const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : "-");
 
+const VISITOR_STATUS_LABELS = {
+  active: "Active (last 7 days)",
+  at_risk: "Needs follow-up",
+  inactive: "Inactive"
+};
+
+const toVisitorStatusLabel = (value) => VISITOR_STATUS_LABELS[value] || "Unknown";
+
 const SITE_NAME = "Sholors-Loafers";
 const DEFAULT_SEO_IMAGE =
   "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80";
@@ -1270,42 +1278,79 @@ const AdminCustomersPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const loadCustomers = async (signal) => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await fetchAdminApi("/admin/customers", { signal });
+      if (!response.ok) {
+        throw new Error("customers load failed");
+      }
+
+      const payload = await response.json();
+      setCustomers(Array.isArray(payload.customers) ? payload.customers : []);
+    } catch (loadError) {
+      if (loadError.name !== "AbortError") {
+        setError("Could not load customers.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const controller = new AbortController();
-
-    const loadCustomers = async () => {
-      try {
-        setLoading(true);
-        const response = await fetchAdminApi("/admin/customers", { signal: controller.signal });
-        if (!response.ok) {
-          throw new Error("customers load failed");
-        }
-
-        const payload = await response.json();
-        setCustomers(Array.isArray(payload.customers) ? payload.customers : []);
-      } catch (loadError) {
-        if (loadError.name !== "AbortError") {
-          setError("Could not load customers.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCustomers();
+    loadCustomers(controller.signal);
     return () => controller.abort();
   }, []);
+
+  const activeVisitors = customers.filter((customer) => customer.visitor_status === "active").length;
+  const atRiskVisitors = customers.filter((customer) => customer.visitor_status === "at_risk").length;
+  const totalOrders = customers.reduce((sum, customer) => sum + Number(customer.total_orders || 0), 0);
 
   return (
     <main className="page product-page">
       <GlobalHeader />
-      <section className="card">
-        <h1>Customer management</h1>
-        <button type="button" className="checkout-link-button" onClick={() => { clearAdminToken(); window.location.assign("/admin"); }}>Logout</button>
+      <section className="card admin-management-card">
+        <div className="admin-management-header">
+          <div>
+            <p className="admin-kicker">Admin dashboard</p>
+            <h1>Customer management</h1>
+            <p className="home-subtitle admin-subcopy">Track returning visitors and quickly identify who needs follow-up.</p>
+          </div>
+          <div className="admin-toolbar-actions">
+            <button type="button" className="home-action-button" onClick={() => loadCustomers()}>
+              Refresh visitors
+            </button>
+            <button type="button" className="checkout-link-button" onClick={() => { clearAdminToken(); window.location.assign("/admin"); }}>
+              Logout
+            </button>
+          </div>
+        </div>
+
         <div className="admin-links" aria-label="Admin sections">
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/orders")}>Order management</button>
+        </div>
+
+        <div className="admin-metrics-grid" aria-label="Customer metrics">
+          <article className="admin-metric-card">
+            <p>Total visitors</p>
+            <strong>{customers.length}</strong>
+          </article>
+          <article className="admin-metric-card">
+            <p>Active visitors</p>
+            <strong>{activeVisitors}</strong>
+          </article>
+          <article className="admin-metric-card">
+            <p>Needs follow-up</p>
+            <strong>{atRiskVisitors}</strong>
+          </article>
+          <article className="admin-metric-card">
+            <p>Total orders</p>
+            <strong>{totalOrders}</strong>
+          </article>
         </div>
 
         {loading ? <p>Loading customers...</p> : null}
@@ -1318,6 +1363,7 @@ const AdminCustomersPage = () => {
                 <tr>
                   <th>Name</th>
                   <th>Phone</th>
+                  <th>Visitor status</th>
                   <th>Total orders</th>
                   <th>Total items</th>
                   <th>Last order</th>
@@ -1326,12 +1372,17 @@ const AdminCustomersPage = () => {
               <tbody>
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>No customers yet.</td>
+                    <td colSpan={6}>No customers yet.</td>
                   </tr>
                 ) : customers.map((customer) => (
                   <tr key={customer.phone}>
                     <td>{customer.customer_name}</td>
                     <td>{customer.phone}</td>
+                    <td>
+                      <span className={`visitor-status-badge visitor-status-${customer.visitor_status || "unknown"}`}>
+                        {toVisitorStatusLabel(customer.visitor_status)}
+                      </span>
+                    </td>
                     <td>{customer.total_orders}</td>
                     <td>{customer.total_items}</td>
                     <td>{formatDateTime(customer.last_order_at)}</td>
