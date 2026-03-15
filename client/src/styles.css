@@ -637,6 +637,21 @@ h1 {
   gap: 6px;
 }
 
+.footer-links-list {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.footer-links-list a {
+  color: #cbd5e1;
+}
+
+.footer-links-list a:hover {
+  color: #fff;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
