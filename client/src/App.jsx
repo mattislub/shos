@@ -281,6 +281,16 @@ const SiteFooter = () => (
         <li><strong>WhatsApp:</strong> 050-123-4567</li>
       </ul>
     </div>
+
+    <div className="footer-block">
+      <h2>Additional information</h2>
+      <nav aria-label="Legal and shipping links">
+        <ul className="footer-links-list">
+          <li><a href="/privacy-shipping-policy#privacy-policy">Privacy policy</a></li>
+          <li><a href="/privacy-shipping-policy#shipping-policy">Shipping policy</a></li>
+        </ul>
+      </nav>
+    </div>
   </footer>
 );
 
@@ -1393,7 +1403,7 @@ const PrivacyShippingPolicyPage = () => (
       <p className="home-eyebrow">POLICY</p>
       <h2 className="product-step-main-title">Privacy & shipping policy</h2>
 
-      <h3>Privacy policy</h3>
+      <h3 id="privacy-policy">Privacy policy</h3>
       <p>We respect your privacy and protect personal information provided through this website.</p>
       <ul className="details-list">
         <li>We collect information needed to process orders, provide support, and improve our service.</li>
@@ -1402,7 +1412,7 @@ const PrivacyShippingPolicyPage = () => (
         <li>You may contact us to request access, correction, or deletion of your personal data.</li>
       </ul>
 
-      <h3>Shipping policy</h3>
+      <h3 id="shipping-policy">Shipping policy</h3>
       <ul className="details-list">
         <li>Estimated delivery time is 3-7 business days for most U.S. destinations.</li>
         <li>Delivery times may vary during holidays, peak periods, weather events, or carrier delays.</li>
