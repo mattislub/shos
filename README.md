@@ -12,6 +12,8 @@
 cd server
 npm install
 export DATABASE_URL=postgres://user:password@localhost:5432/shos
+export ADMIN_USERNAME=admin
+export ADMIN_PASSWORD=admin123
 npm run dev
 ```
 
@@ -35,3 +37,10 @@ npm run dev
 
 - דף הניהול זמין בכתובת `http://localhost:5173/admin` (ללא קישור גלוי מדף הבית).
 - העלאת תמונות נעשית בקבצים מקומיים (לא קישורים), וניתן להעלות כמה תמונות לכל מוצר.
+
+
+## אבטחת ניהול
+
+- כל נתיבי הניהול (`/api/admin/*`) דורשים Basic Auth.
+- ברירת מחדל: `ADMIN_USERNAME=admin`, `ADMIN_PASSWORD=admin123` (מומלץ לשנות בפרודקשן).
+- כניסה לניהול נעשית דרך מסך התחברות ב-`/admin` והדפדפן שומר את הטוקן ב-sessionStorage.

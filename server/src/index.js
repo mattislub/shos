@@ -18,6 +18,37 @@ app.use(cors());
 app.use(express.json({ limit: "25mb" }));
 app.use("/uploads", express.static(uploadsDir));
 
+const adminUsername = (process.env.ADMIN_USERNAME || "admin").trim();
+const adminPassword = (process.env.ADMIN_PASSWORD || "admin123").trim();
+
+const requireAdminAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization || "";
+  if (!authHeader.startsWith("Basic ")) {
+    res.set("WWW-Authenticate", 'Basic realm="Admin Area"');
+    return res.status(401).json({ message: "Admin authentication is required" });
+  }
+
+  const token = authHeader.slice(6).trim();
+  let decoded = "";
+
+  try {
+    decoded = Buffer.from(token, "base64").toString("utf8");
+  } catch (_error) {
+    decoded = "";
+  }
+
+  const separatorIndex = decoded.indexOf(":");
+  const username = separatorIndex >= 0 ? decoded.slice(0, separatorIndex) : "";
+  const password = separatorIndex >= 0 ? decoded.slice(separatorIndex + 1) : "";
+
+  if (username !== adminUsername || password !== adminPassword) {
+    res.set("WWW-Authenticate", 'Basic realm="Admin Area"');
+    return res.status(401).json({ message: "Invalid admin credentials" });
+  }
+
+  return next();
+};
+
 const mapProductWithImages = (row, imageRows) => {
   const images = imageRows.map((image) => image.image_url);
   const imageEntries = imageRows.map((image) => ({
@@ -170,7 +201,7 @@ app.get("/api/product", async (_req, res) => {
   }
 });
 
-app.put("/api/admin/home-hero", async (req, res) => {
+app.put("/api/admin/home-hero", requireAdminAuth, async (req, res) => {
   const { image } = req.body || {};
 
   if (!image || typeof image !== "object") {
@@ -242,7 +273,7 @@ app.post("/api/orders", async (req, res) => {
   }
 });
 
-app.put("/api/admin/product", async (req, res) => {
+app.put("/api/admin/product", requireAdminAuth, async (req, res) => {
   const { title, description, price_usd, cta_text, images } = req.body || {};
 
   console.info("[admin] update product request received", {
@@ -372,7 +403,7 @@ app.put("/api/admin/product", async (req, res) => {
 });
 
 
-app.get("/api/admin/orders", async (_req, res) => {
+app.get("/api/admin/orders", requireAdminAuth, async (_req, res) => {
   try {
     const result = await db.query(
       `SELECT
@@ -395,7 +426,7 @@ app.get("/api/admin/orders", async (_req, res) => {
   }
 });
 
-app.get("/api/admin/customers", async (_req, res) => {
+app.get("/api/admin/customers", requireAdminAuth, async (_req, res) => {
   try {
     const result = await db.query(
       `SELECT

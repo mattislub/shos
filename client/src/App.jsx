@@ -25,6 +25,8 @@ const fallbackHomeHeroImage =
 
 const apiUrl = (import.meta.env.VITE_API_URL || "/api").trim();
 const CART_STORAGE_KEY = "shos-cart-items";
+const ADMIN_AUTH_STORAGE_KEY = "shos-admin-auth";
+const ADMIN_DEFAULT_USERNAME = "admin";
 
 const serverBaseUrl = (() => {
   try {
@@ -203,6 +205,43 @@ const writeCartItems = (items) => {
 
 const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : "-");
+
+const buildAdminBasicToken = (username, password) => window.btoa(`${username}:${password}`);
+
+const readAdminToken = () => {
+  try {
+    return window.sessionStorage.getItem(ADMIN_AUTH_STORAGE_KEY) || "";
+  } catch (_error) {
+    return "";
+  }
+};
+
+const writeAdminToken = (token) => {
+  window.sessionStorage.setItem(ADMIN_AUTH_STORAGE_KEY, token);
+};
+
+const clearAdminToken = () => {
+  window.sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
+};
+
+const fetchAdminApi = async (path, options = {}) => {
+  const token = readAdminToken();
+  const headers = {
+    ...(options.headers || {}),
+    ...(token ? { Authorization: `Basic ${token}` } : {})
+  };
+
+  const response = await fetch(`${apiUrl}${path}`, {
+    ...options,
+    headers
+  });
+
+  if (response.status === 401) {
+    clearAdminToken();
+  }
+
+  return response;
+};
 
 const useProduct = () => {
   const [product, setProduct] = useState(null);
@@ -648,6 +687,60 @@ const StorePage = () => {
   );
 };
 
+const AdminLoginPage = () => {
+  const [username, setUsername] = useState(ADMIN_DEFAULT_USERNAME);
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState("");
+
+  const submitLogin = (event) => {
+    event.preventDefault();
+
+    if (!username || !password) {
+      setStatus("Please enter a username and password.");
+      return;
+    }
+
+    const token = buildAdminBasicToken(String(username).trim(), String(password));
+    writeAdminToken(token);
+    window.location.reload();
+  };
+
+  return (
+    <main className="page product-page">
+      <GlobalHeader />
+      <section className="card">
+        <h1>Admin login</h1>
+        <p className="home-subtitle">Enter admin username and password to access management pages.</p>
+
+        <form className="order-form" onSubmit={submitLogin}>
+          <input
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            placeholder="Username"
+            autoComplete="username"
+          />
+          <input
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Password"
+            type="password"
+            autoComplete="current-password"
+          />
+          <button type="submit">Login</button>
+        </form>
+
+        {status ? <p className="warning">{status}</p> : null}
+      </section>
+      <SiteFooter />
+    </main>
+  );
+};
+
+const AdminAuthGate = ({ children }) => {
+  const hasToken = Boolean(readAdminToken());
+  return hasToken ? children : <AdminLoginPage />;
+};
+
 const AdminPage = () => {
   const { product, setProduct, homeHeroImageUrl, setHomeHeroImageUrl, loading, error } = useProduct();
   const [title, setTitle] = useState("");
@@ -771,7 +864,7 @@ const AdminPage = () => {
         ...additionalImagesPayload.map(({ name, data, color_name }) => ({ name, data, color_name }))
       ];
 
-      const response = await fetch(`${apiUrl}/admin/product`, {
+      const response = await fetchAdminApi("/admin/product", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -838,7 +931,7 @@ const AdminPage = () => {
 
     try {
       const uploadedImage = await compressImageForUpload(heroFile);
-      const response = await fetch(`${apiUrl}/admin/home-hero`, {
+      const response = await fetchAdminApi("/admin/home-hero", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -866,6 +959,7 @@ const AdminPage = () => {
     <main className="page">
       <section className="card">
         <h1>Product management</h1>
+        <button type="button" className="checkout-link-button" onClick={() => { clearAdminToken(); window.location.assign("/admin"); }}>Logout</button>
         {loading ? <p>Loading product...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
 
@@ -1038,7 +1132,7 @@ const AdminCustomersPage = () => {
     const loadCustomers = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${apiUrl}/admin/customers`, { signal: controller.signal });
+        const response = await fetchAdminApi("/admin/customers", { signal: controller.signal });
         if (!response.ok) {
           throw new Error("customers load failed");
         }
@@ -1063,6 +1157,7 @@ const AdminCustomersPage = () => {
       <GlobalHeader />
       <section className="card">
         <h1>Customer management</h1>
+        <button type="button" className="checkout-link-button" onClick={() => { clearAdminToken(); window.location.assign("/admin"); }}>Logout</button>
         <div className="admin-links" aria-label="Admin sections">
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
@@ -1119,7 +1214,7 @@ const AdminOrdersPage = () => {
     const loadOrders = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${apiUrl}/admin/orders`, { signal: controller.signal });
+        const response = await fetchAdminApi("/admin/orders", { signal: controller.signal });
         if (!response.ok) {
           throw new Error("orders load failed");
         }
@@ -1144,6 +1239,7 @@ const AdminOrdersPage = () => {
       <GlobalHeader />
       <section className="card">
         <h1>Order management</h1>
+        <button type="button" className="checkout-link-button" onClick={() => { clearAdminToken(); window.location.assign("/admin"); }}>Logout</button>
         <div className="admin-links" aria-label="Admin sections">
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
@@ -1422,15 +1518,15 @@ function App() {
   const isShippingDetailsPage = window.location.pathname === "/shipping-details";
   const isPolicyPage = window.location.pathname === "/privacy-shipping-policy";
   if (isAdminCustomersPage) {
-    return <AdminCustomersPage />;
+    return <AdminAuthGate><AdminCustomersPage /></AdminAuthGate>;
   }
 
   if (isAdminOrdersPage) {
-    return <AdminOrdersPage />;
+    return <AdminAuthGate><AdminOrdersPage /></AdminAuthGate>;
   }
 
   if (isAdminPage) {
-    return <AdminPage />;
+    return <AdminAuthGate><AdminPage /></AdminAuthGate>;
   }
 
   if (isShippingDetailsPage) {
