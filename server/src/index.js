@@ -371,6 +371,51 @@ app.put("/api/admin/product", async (req, res) => {
   }
 });
 
+
+app.get("/api/admin/orders", async (_req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+         o.id,
+         o.customer_name,
+         o.phone,
+         o.quantity,
+         o.status,
+         o.created_at,
+         p.title AS product_title
+       FROM store_orders o
+       INNER JOIN store_products p ON p.id = o.product_id
+       ORDER BY o.created_at DESC`
+    );
+
+    return res.json({ orders: result.rows });
+  } catch (error) {
+    console.error("Failed to load admin orders", error);
+    return res.status(500).json({ message: "Failed to load orders" });
+  }
+});
+
+app.get("/api/admin/customers", async (_req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+         phone,
+         (ARRAY_AGG(customer_name ORDER BY created_at DESC))[1] AS customer_name,
+         COUNT(*)::INTEGER AS total_orders,
+         COALESCE(SUM(quantity), 0)::INTEGER AS total_items,
+         MAX(created_at) AS last_order_at
+       FROM store_orders
+       GROUP BY phone
+       ORDER BY MAX(created_at) DESC`
+    );
+
+    return res.json({ customers: result.rows });
+  } catch (error) {
+    console.error("Failed to load admin customers", error);
+    return res.status(500).json({ message: "Failed to load customers" });
+  }
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
