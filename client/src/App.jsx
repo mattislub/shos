@@ -203,6 +203,10 @@ const writeCartItems = (items) => {
   window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
 };
 
+const getCartItemCount = (items) => (Array.isArray(items)
+  ? items.reduce((total, item) => total + Math.max(1, Number(item?.quantity) || 1), 0)
+  : 0);
+
 const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : "-");
 
@@ -425,6 +429,23 @@ const useProduct = () => {
 };
 
 
+const GlobalHeader = ({ cartItemCount = 0 }) => (
+  <header className="home-header">
+    <div className="home-title-wrap">
+      <h1 className="home-title">Sholors-Loafers</h1>
+      <p className="home-eyebrow">Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women</p>
+    </div>
+    <nav className="home-actions" aria-label="Main actions">
+      <button type="button" className="home-action-button"><span className="home-action-icon">📞</span>Contact</button>
+      <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
+      <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
+      <button type="button" className="home-action-button home-action-cart-button" onClick={() => window.location.assign("/cart")}>
+        <span className="home-action-icon">🛒</span>
+        Cart
+        {cartItemCount > 0 ? <span className="cart-count-badge" aria-label={`Cart has ${cartItemCount} items`}>{cartItemCount}</span> : null}
+      </button>
+    </nav>
+  </header>
 const ContactModal = ({ onClose }) => (
   <div className="modal-backdrop" role="presentation" onClick={onClose}>
     <div
@@ -668,7 +689,7 @@ const StorePage = () => {
     return (
       <main className="page product-page">
         {cartItems.length > 0 ? <CartSidebar /> : null}
-        <GlobalHeader />
+        <GlobalHeader cartItemCount={getCartItemCount(cartItems)} />
         <section className="card product-step-page" aria-label="Product page">
           {loading ? <p>Loading product...</p> : null}
           {error ? <p className="warning">{error}</p> : null}
@@ -773,7 +794,7 @@ const StorePage = () => {
   return (
     <main className="page">
       {cartItems.length > 0 ? <CartSidebar /> : null}
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(cartItems)} />
 
       <section className="hero-banner">
         <img src={homeHeroImageUrl} alt="Main banner" className="hero-banner-image" />
@@ -893,7 +914,7 @@ const AdminLoginPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
       <section className="card">
         <h1>Admin login</h1>
         <p className="home-subtitle">Enter admin username and password to access management pages.</p>
@@ -1344,7 +1365,7 @@ const AdminCustomersPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
       <section className="card admin-management-card">
         <div className="admin-management-header">
           <div>
@@ -1465,7 +1486,7 @@ const AdminOrdersPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
       <section className="card">
         <h1>Order management</h1>
         <button type="button" className="checkout-link-button" onClick={() => { clearAdminToken(); window.location.assign("/admin"); }}>Logout</button>
@@ -1562,7 +1583,7 @@ const CartPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(items)} />
 
       <section className="card cart-actions-card" aria-label="Cart actions">
         <p className="home-eyebrow">SHOPPING BAG</p>
@@ -1662,7 +1683,7 @@ const ShippingDetailsPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
 
       <section className="card shipping-card">
         <p className="home-eyebrow">CHECKOUT</p>
@@ -1712,7 +1733,7 @@ const ShippingDetailsPage = () => {
 
 const PrivacyShippingPolicyPage = () => (
   <main className="page product-page">
-    <GlobalHeader />
+    <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
 
     <section className="card policy-card">
       <p className="home-eyebrow">POLICY</p>
