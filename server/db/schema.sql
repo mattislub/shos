@@ -28,8 +28,26 @@ CREATE TABLE store_orders (
   product_id INTEGER NOT NULL REFERENCES store_products(id) ON DELETE RESTRICT,
   customer_name TEXT NOT NULL,
   phone TEXT NOT NULL,
+  customer_email TEXT,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   status TEXT NOT NULL DEFAULT 'new',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE customer_login_codes (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  consumed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE customer_sessions (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL,
+  session_token TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

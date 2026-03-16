@@ -28,6 +28,7 @@ const CART_STORAGE_KEY = "shos-cart-items";
 const ADMIN_AUTH_STORAGE_KEY = "shos-admin-auth";
 const ADMIN_DEFAULT_USERNAME = "admin";
 const ABOUT_SECTION_HASH = "#home-about-images";
+const CUSTOMER_SESSION_STORAGE_KEY = "shos-customer-session";
 
 const serverBaseUrl = (() => {
   try {
@@ -267,6 +268,12 @@ const SEO_BY_PATH = {
     description: "Track and manage orders with status and customer details.",
     keywords: "admin orders, order management, ecommerce operations",
     robots: "noindex,nofollow,noarchive,nosnippet,max-image-preview:none"
+  },
+  "/account": {
+    title: "My Account | Sholors-Loafers",
+    description: "Sign in with email code and view your order history.",
+    keywords: "customer account, order history, email login",
+    robots: "noindex,nofollow"
   }
 };
 
@@ -351,6 +358,32 @@ const applyPageSeo = (path) => {
       url: buildAbsoluteUrl("/")
     }
   });
+};
+
+const readCustomerSession = () => {
+  try {
+    const rawValue = window.localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
+    const parsed = JSON.parse(rawValue || "null");
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    if (!parsed.session_token || !parsed.email) {
+      return null;
+    }
+
+    return parsed;
+  } catch (_error) {
+    return null;
+  }
+};
+
+const writeCustomerSession = (session) => {
+  window.localStorage.setItem(CUSTOMER_SESSION_STORAGE_KEY, JSON.stringify(session));
+};
+
+const clearCustomerSession = () => {
+  window.localStorage.removeItem(CUSTOMER_SESSION_STORAGE_KEY);
 };
 
 const buildAdminBasicToken = (username, password) => window.btoa(`${username}:${password}`);
@@ -471,7 +504,7 @@ const GlobalHeader = ({ cartItemCount = 0 }) => {
         <nav className="home-actions" aria-label="Main actions">
           <button type="button" className="home-action-button" onClick={() => setIsContactModalOpen(true)}><span className="home-action-icon">📞</span>Contact</button>
           <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
-          <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/account")}><span className="home-action-icon">👤</span>Sign in</button>
           <button type="button" className="home-action-button home-action-cart-button" onClick={() => window.location.assign("/cart")}>
             <span className="home-action-icon">🛒</span>
             Cart
@@ -1732,6 +1765,207 @@ const ShippingDetailsPage = () => {
   );
 };
 
+const AccountPage = () => {
+  const [session, setSession] = useState(() => readCustomerSession());
+  const [emailInput, setEmailInput] = useState("");
+  const [codeInput, setCodeInput] = useState("");
+  const [isCodeRequested, setIsCodeRequested] = useState(false);
+  const [status, setStatus] = useState("");
+  const [orders, setOrders] = useState([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+
+  const requestLoginCode = async (event) => {
+    event.preventDefault();
+    setStatus("");
+
+    try {
+      const response = await fetch(`${apiUrl}/customer-auth/request-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput.trim().toLowerCase() })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.message || "Failed to send login code");
+      }
+
+      setIsCodeRequested(true);
+      setStatus("Login code sent to your email.");
+    } catch (error) {
+      setStatus(error.message || "Failed to send login code");
+    }
+  };
+
+  const verifyCode = async (event) => {
+    event.preventDefault();
+    setStatus("");
+
+    try {
+      const response = await fetch(`${apiUrl}/customer-auth/verify-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailInput.trim().toLowerCase(),
+          code: codeInput.trim()
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.message || "Failed to verify code");
+      }
+
+      writeCustomerSession(payload);
+      setSession(payload);
+      setStatus("You are now signed in.");
+    } catch (error) {
+      setStatus(error.message || "Failed to verify code");
+    }
+  };
+
+  const logout = () => {
+    clearCustomerSession();
+    setSession(null);
+    setOrders([]);
+    setIsCodeRequested(false);
+    setCodeInput("");
+    setStatus("You have been signed out.");
+  };
+
+  useEffect(() => {
+    if (!session?.session_token) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const loadOrders = async () => {
+      try {
+        setIsLoadingOrders(true);
+        const response = await fetch(`${apiUrl}/customer/me/orders`, {
+          headers: { Authorization: `Bearer ${session.session_token}` },
+          signal: controller.signal
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.message || "Failed to load order history");
+        }
+
+        setOrders(Array.isArray(payload.orders) ? payload.orders : []);
+      } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
+        if (String(error.message || "").toLowerCase().includes("expired")) {
+          clearCustomerSession();
+          setSession(null);
+        }
+
+        setStatus(error.message || "Failed to load order history");
+      } finally {
+        setIsLoadingOrders(false);
+      }
+    };
+
+    loadOrders();
+    return () => controller.abort();
+  }, [session?.session_token]);
+
+  return (
+    <main className="page product-page">
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
+
+      <section className="card shipping-card">
+        <p className="home-eyebrow">MY ACCOUNT</p>
+        <h2 className="product-step-main-title">Customer sign in</h2>
+        <p className="home-subtitle">Real sign-in with email and a one-time 6-digit code.</p>
+
+        {!session ? (
+          <>
+            <form className="order-form" onSubmit={requestLoginCode}>
+              <input
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                placeholder="Email"
+                value={emailInput}
+                onChange={(event) => setEmailInput(event.target.value)}
+              />
+              <button type="submit">Send code to email</button>
+            </form>
+
+            {isCodeRequested ? (
+              <form className="order-form" onSubmit={verifyCode}>
+                <input
+                  name="code"
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  title="6 digit code"
+                  required
+                  placeholder="6-digit code"
+                  value={codeInput}
+                  onChange={(event) => setCodeInput(event.target.value)}
+                />
+                <button type="submit">Verify and sign in</button>
+              </form>
+            ) : null}
+          </>
+        ) : (
+          <div>
+            <p className="status">Signed in as: {session.email}</p>
+            <button type="button" className="checkout-link-button" onClick={logout}>Sign out</button>
+          </div>
+        )}
+
+        {status ? <p className="status">{status}</p> : null}
+      </section>
+
+      {session ? (
+        <section className="card admin-table-card" aria-label="Customer order history">
+          <h2 className="product-step-main-title">Purchase history</h2>
+          {isLoadingOrders ? <p>Loading orders...</p> : null}
+          {!isLoadingOrders ? (
+            <div className="table-scroll" role="region" aria-label="Customer order history table">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>No orders found for this email yet.</td>
+                    </tr>
+                  ) : orders.map((order) => (
+                    <tr key={order.id}>
+                      <td>{order.id}</td>
+                      <td>{order.product_title}</td>
+                      <td>{order.quantity}</td>
+                      <td>{order.status}</td>
+                      <td>{formatDateTime(order.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      <SiteFooter />
+    </main>
+  );
+};
+
 const PrivacyShippingPolicyPage = () => (
   <main className="page product-page">
     <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
@@ -1772,6 +2006,7 @@ function App() {
   const isAdminOrdersPage = window.location.pathname === "/admin/orders";
   const isShippingDetailsPage = window.location.pathname === "/shipping-details";
   const isPolicyPage = window.location.pathname === "/privacy-shipping-policy";
+  const isAccountPage = window.location.pathname === "/account";
   if (isAdminCustomersPage) {
     return <AdminAuthGate><AdminCustomersPage /></AdminAuthGate>;
   }
@@ -1790,6 +2025,10 @@ function App() {
 
   if (isPolicyPage) {
     return <PrivacyShippingPolicyPage />;
+  }
+
+  if (isAccountPage) {
+    return <AccountPage />;
   }
 
   if (isCartPage) {

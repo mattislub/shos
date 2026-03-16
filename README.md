@@ -53,11 +53,29 @@ npm run dev
 
 אם אחד השדות חסר, ההזמנה עדיין תישמר במסד והשרת ידלג על שליחת המייל.
 
+
+## Customer account (email + 6-digit code)
+
+A minimal customer area is available at `http://localhost:5173/account`:
+
+- Sign in with email and a one-time 6-digit code sent by email.
+- View real order history by signed-in email (not static content).
+
+Optional environment variables:
+
+- `CUSTOMER_LOGIN_CODE_EXPIRES_MINUTES` (default: `10`)
+- `CUSTOMER_SESSION_EXPIRES_DAYS` (default: `30`)
+
+Note: login-code delivery depends on SMTP configuration. If SMTP is not configured, the server will store the code but users will not receive it by email.
+
 ## API עיקרי
 
 - `GET /api/product` — מחזיר את המוצר הפעיל היחיד כולל מערך תמונות `images`.
 - `POST /api/orders` — יוצר הזמנה חדשה (שם, טלפון, כמות, ו-`customer_email` אופציונלי למייל אישור ללקוח).
 - `PUT /api/admin/product` — עדכון מוצר פעיל והעלאת תמונות מקבצים מקומיים (נשמרות פיזית בשרת תחת `/uploads`).
+- `POST /api/customer-auth/request-code` — request a 6-digit login code by email.
+- `POST /api/customer-auth/verify-code` — verify the code and return a customer `session_token`.
+- `GET /api/customer/me/orders` — return the signed-in customer order history (Bearer token).
 
 ## ניהול מוצר
 
