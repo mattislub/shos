@@ -27,6 +27,7 @@ const apiUrl = (import.meta.env.VITE_API_URL || "/api").trim();
 const CART_STORAGE_KEY = "shos-cart-items";
 const ADMIN_AUTH_STORAGE_KEY = "shos-admin-auth";
 const ADMIN_DEFAULT_USERNAME = "admin";
+const ABOUT_SECTION_HASH = "#home-about-images";
 
 const serverBaseUrl = (() => {
   try {
