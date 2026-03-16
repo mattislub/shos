@@ -425,6 +425,21 @@ const useProduct = () => {
 };
 
 
+const ABOUT_SECTION_HASH = "#home-about-images";
+
+const goToAboutSection = () => {
+  if (window.location.pathname !== "/") {
+    window.location.assign(`/${ABOUT_SECTION_HASH}`);
+    return;
+  }
+
+  window.location.hash = ABOUT_SECTION_HASH;
+  const section = document.querySelector(ABOUT_SECTION_HASH);
+  if (section) {
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
+
 const GlobalHeader = () => (
   <header className="home-header">
     <div className="home-title-wrap">
@@ -433,7 +448,7 @@ const GlobalHeader = () => (
     </div>
     <nav className="home-actions" aria-label="Main actions">
       <button type="button" className="home-action-button"><span className="home-action-icon">📞</span>Contact</button>
-      <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
+      <button type="button" className="home-action-button" onClick={goToAboutSection}><span className="home-action-icon">ℹ️</span>About</button>
       <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
       <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
     </nav>
@@ -512,6 +527,19 @@ const StorePage = () => {
     return () => {
       window.removeEventListener("storage", syncCartItems);
     };
+  }, []);
+
+  useEffect(() => {
+    if (window.location.hash !== ABOUT_SECTION_HASH) {
+      return;
+    }
+
+    const section = document.querySelector(ABOUT_SECTION_HASH);
+    if (!section) {
+      return;
+    }
+
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   const sizeChartRows = [
@@ -829,7 +857,7 @@ const StorePage = () => {
         </div>
       </section>
 
-      <section className="card stacked-home-images" aria-label="Additional home images">
+      <section id="home-about-images" className="card stacked-home-images" aria-label="Additional home images">
         <img src="/uploads/abc.jpg" alt="Promotional image top" className="stacked-home-image" />
         <img src="/uploads/dfg.jpg" alt="Promotional image bottom" className="stacked-home-image" />
       </section>
