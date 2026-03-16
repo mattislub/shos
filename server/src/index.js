@@ -218,6 +218,13 @@ const ensureCustomerAuthTables = async () => {
   );
 };
 
+const ensureStoreOrdersCustomerEmailColumn = async () => {
+  await db.query(
+    `ALTER TABLE store_orders
+     ADD COLUMN IF NOT EXISTS customer_email TEXT`
+  );
+};
+
 const saveBase64Image = (imagePayload) => {
   const { name, data } = imagePayload || {};
   if (!name || !data || typeof name !== "string" || typeof data !== "string") {
@@ -741,6 +748,7 @@ app.get("/api/health", (_req, res) => {
 const start = async () => {
   try {
     await ensureCustomerAuthTables();
+    await ensureStoreOrdersCustomerEmailColumn();
 
     app.listen(port, () => {
       console.log(`Server listening on port ${port}`);
