@@ -236,6 +236,24 @@ button:focus-visible {
   background: #eef2ff;
 }
 
+
+.home-action-cart-button {
+  position: relative;
+}
+
+.cart-count-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
 .hero-banner-image {
   width: 100%;
   height: 220px;
@@ -1027,6 +1045,19 @@ h1 {
   padding: 10px 12px;
   font-weight: 700;
   cursor: pointer;
+}
+
+
+.contact-mail-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #ffffff;
+  text-decoration: none;
+  padding: 10px 12px;
+  font-weight: 700;
 }
 
 

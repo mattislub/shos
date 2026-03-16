@@ -203,6 +203,10 @@ const writeCartItems = (items) => {
   window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
 };
 
+const getCartItemCount = (items) => (Array.isArray(items)
+  ? items.reduce((total, item) => total + Math.max(1, Number(item?.quantity) || 1), 0)
+  : 0);
+
 const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : "-");
 
@@ -440,7 +444,7 @@ const goToAboutSection = () => {
   }
 };
 
-const GlobalHeader = () => (
+const GlobalHeader = ({ cartItemCount = 0 }) => (
   <header className="home-header">
     <div className="home-title-wrap">
       <h1 className="home-title">Sholors-Loafers</h1>
@@ -450,10 +454,62 @@ const GlobalHeader = () => (
       <button type="button" className="home-action-button"><span className="home-action-icon">📞</span>Contact</button>
       <button type="button" className="home-action-button" onClick={goToAboutSection}><span className="home-action-icon">ℹ️</span>About</button>
       <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
-      <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
+      <button type="button" className="home-action-button home-action-cart-button" onClick={() => window.location.assign("/cart")}>
+        <span className="home-action-icon">🛒</span>
+        Cart
+        {cartItemCount > 0 ? <span className="cart-count-badge" aria-label={`Cart has ${cartItemCount} items`}>{cartItemCount}</span> : null}
+      </button>
     </nav>
   </header>
+const ContactModal = ({ onClose }) => (
+  <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <div
+      className="modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Contact details"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <h2>Contact us</h2>
+      <p>We are happy to help with any question about your order or the product.</p>
+      <ul className="contact-list">
+        <li><strong>Phone:</strong> 03-555-1234</li>
+        <li><strong>Email:</strong> hello@shos.co.il</li>
+        <li><strong>WhatsApp:</strong> 050-123-4567</li>
+        <li><strong>Business hours:</strong> Sun-Thu 09:00-18:00</li>
+      </ul>
+      <a
+        className="contact-mail-button"
+        href="mailto:hello@shos.co.il?subject=%D7%A4%D7%A0%D7%99%D7%99%D7%94%20%D7%93%D7%A8%D7%9A%20%D7%94%D7%90%D7%AA%D7%A8&body=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%91%D7%A0%D7%95%D7%A9%D7%90%20..."
+    >
+        Send contact email
+      </a>
+      <button type="button" onClick={onClose}>Close</button>
+    </div>
+  </div>
 );
+
+const GlobalHeader = () => {
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
+  return (
+    <>
+      <header className="home-header">
+        <div className="home-title-wrap">
+          <h1 className="home-title">Sholors-Loafers</h1>
+          <p className="home-eyebrow">Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women</p>
+        </div>
+        <nav className="home-actions" aria-label="Main actions">
+          <button type="button" className="home-action-button" onClick={() => setIsContactModalOpen(true)}><span className="home-action-icon">📞</span>Contact</button>
+          <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
+          <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
+        </nav>
+      </header>
+      {isContactModalOpen ? <ContactModal onClose={() => setIsContactModalOpen(false)} /> : null}
+    </>
+  );
+};
 
 const SiteFooter = () => (
   <footer className="site-footer" aria-label="Updates and contact">
@@ -661,7 +717,7 @@ const StorePage = () => {
     return (
       <main className="page product-page">
         {cartItems.length > 0 ? <CartSidebar /> : null}
-        <GlobalHeader />
+        <GlobalHeader cartItemCount={getCartItemCount(cartItems)} />
         <section className="card product-step-page" aria-label="Product page">
           {loading ? <p>Loading product...</p> : null}
           {error ? <p className="warning">{error}</p> : null}
@@ -766,7 +822,7 @@ const StorePage = () => {
   return (
     <main className="page">
       {cartItems.length > 0 ? <CartSidebar /> : null}
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(cartItems)} />
 
       <section className="hero-banner">
         <img src={homeHeroImageUrl} alt="Main banner" className="hero-banner-image" />
@@ -886,7 +942,7 @@ const AdminLoginPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
       <section className="card">
         <h1>Admin login</h1>
         <p className="home-subtitle">Enter admin username and password to access management pages.</p>
@@ -1337,7 +1393,7 @@ const AdminCustomersPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
       <section className="card admin-management-card">
         <div className="admin-management-header">
           <div>
@@ -1458,7 +1514,7 @@ const AdminOrdersPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
       <section className="card">
         <h1>Order management</h1>
         <button type="button" className="checkout-link-button" onClick={() => { clearAdminToken(); window.location.assign("/admin"); }}>Logout</button>
@@ -1555,7 +1611,7 @@ const CartPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(items)} />
 
       <section className="card cart-actions-card" aria-label="Cart actions">
         <p className="home-eyebrow">SHOPPING BAG</p>
@@ -1655,7 +1711,7 @@ const ShippingDetailsPage = () => {
 
   return (
     <main className="page product-page">
-      <GlobalHeader />
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
 
       <section className="card shipping-card">
         <p className="home-eyebrow">CHECKOUT</p>
@@ -1705,7 +1761,7 @@ const ShippingDetailsPage = () => {
 
 const PrivacyShippingPolicyPage = () => (
   <main className="page product-page">
-    <GlobalHeader />
+    <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
 
     <section className="card policy-card">
       <p className="home-eyebrow">POLICY</p>
