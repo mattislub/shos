@@ -195,6 +195,29 @@ const loadHomeHeroImage = async () => {
   return result.rows[0]?.home_hero_image_url || "";
 };
 
+const ensureCustomerAuthTables = async () => {
+  await db.query(
+    `CREATE TABLE IF NOT EXISTS customer_login_codes (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      consumed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`
+  );
+
+  await db.query(
+    `CREATE TABLE IF NOT EXISTS customer_sessions (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL,
+      session_token TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`
+  );
+};
+
 const saveBase64Image = (imagePayload) => {
   const { name, data } = imagePayload || {};
   if (!name || !data || typeof name !== "string" || typeof data !== "string") {
@@ -717,6 +740,8 @@ app.get("/api/health", (_req, res) => {
 
 const start = async () => {
   try {
+    await ensureCustomerAuthTables();
+
     app.listen(port, () => {
       console.log(`Server listening on port ${port}`);
     });
