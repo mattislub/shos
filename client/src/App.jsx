@@ -429,38 +429,6 @@ const useProduct = () => {
 };
 
 
-const ABOUT_SECTION_HASH = "#home-about-images";
-
-const goToAboutSection = () => {
-  if (window.location.pathname !== "/") {
-    window.location.assign(`/${ABOUT_SECTION_HASH}`);
-    return;
-  }
-
-  window.location.hash = ABOUT_SECTION_HASH;
-  const section = document.querySelector(ABOUT_SECTION_HASH);
-  if (section) {
-    section.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-};
-
-const GlobalHeader = ({ cartItemCount = 0 }) => (
-  <header className="home-header">
-    <div className="home-title-wrap">
-      <h1 className="home-title">Sholors-Loafers</h1>
-      <p className="home-eyebrow">Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women</p>
-    </div>
-    <nav className="home-actions" aria-label="Main actions">
-      <button type="button" className="home-action-button"><span className="home-action-icon">📞</span>Contact</button>
-      <button type="button" className="home-action-button" onClick={goToAboutSection}><span className="home-action-icon">ℹ️</span>About</button>
-      <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
-      <button type="button" className="home-action-button home-action-cart-button" onClick={() => window.location.assign("/cart")}>
-        <span className="home-action-icon">🛒</span>
-        Cart
-        {cartItemCount > 0 ? <span className="cart-count-badge" aria-label={`Cart has ${cartItemCount} items`}>{cartItemCount}</span> : null}
-      </button>
-    </nav>
-  </header>
 const ContactModal = ({ onClose }) => (
   <div className="modal-backdrop" role="presentation" onClick={onClose}>
     <div
@@ -489,7 +457,7 @@ const ContactModal = ({ onClose }) => (
   </div>
 );
 
-const GlobalHeader = () => {
+const GlobalHeader = ({ cartItemCount = 0 }) => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   return (
@@ -503,7 +471,11 @@ const GlobalHeader = () => {
           <button type="button" className="home-action-button" onClick={() => setIsContactModalOpen(true)}><span className="home-action-icon">📞</span>Contact</button>
           <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
           <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
-          <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
+          <button type="button" className="home-action-button home-action-cart-button" onClick={() => window.location.assign("/cart")}>
+            <span className="home-action-icon">🛒</span>
+            Cart
+            {cartItemCount > 0 ? <span className="cart-count-badge" aria-label={`Cart has ${cartItemCount} items`}>{cartItemCount}</span> : null}
+          </button>
         </nav>
       </header>
       {isContactModalOpen ? <ContactModal onClose={() => setIsContactModalOpen(false)} /> : null}
