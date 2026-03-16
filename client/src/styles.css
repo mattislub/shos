@@ -1030,6 +1030,19 @@ h1 {
 }
 
 
+.contact-mail-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #ffffff;
+  text-decoration: none;
+  padding: 10px 12px;
+  font-weight: 700;
+}
+
+
 .cart-actions-card {
   display: grid;
   gap: 10px;

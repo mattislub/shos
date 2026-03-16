@@ -425,20 +425,55 @@ const useProduct = () => {
 };
 
 
-const GlobalHeader = () => (
-  <header className="home-header">
-    <div className="home-title-wrap">
-      <h1 className="home-title">Sholors-Loafers</h1>
-      <p className="home-eyebrow">Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women</p>
+const ContactModal = ({ onClose }) => (
+  <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <div
+      className="modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Contact details"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <h2>Contact us</h2>
+      <p>We are happy to help with any question about your order or the product.</p>
+      <ul className="contact-list">
+        <li><strong>Phone:</strong> 03-555-1234</li>
+        <li><strong>Email:</strong> hello@shos.co.il</li>
+        <li><strong>WhatsApp:</strong> 050-123-4567</li>
+        <li><strong>Business hours:</strong> Sun-Thu 09:00-18:00</li>
+      </ul>
+      <a
+        className="contact-mail-button"
+        href="mailto:hello@shos.co.il?subject=%D7%A4%D7%A0%D7%99%D7%99%D7%94%20%D7%93%D7%A8%D7%9A%20%D7%94%D7%90%D7%AA%D7%A8&body=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%91%D7%A0%D7%95%D7%A9%D7%90%20..."
+    >
+        Send contact email
+      </a>
+      <button type="button" onClick={onClose}>Close</button>
     </div>
-    <nav className="home-actions" aria-label="Main actions">
-      <button type="button" className="home-action-button"><span className="home-action-icon">📞</span>Contact</button>
-      <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
-      <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
-      <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
-    </nav>
-  </header>
+  </div>
 );
+
+const GlobalHeader = () => {
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
+  return (
+    <>
+      <header className="home-header">
+        <div className="home-title-wrap">
+          <h1 className="home-title">Sholors-Loafers</h1>
+          <p className="home-eyebrow">Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women</p>
+        </div>
+        <nav className="home-actions" aria-label="Main actions">
+          <button type="button" className="home-action-button" onClick={() => setIsContactModalOpen(true)}><span className="home-action-icon">📞</span>Contact</button>
+          <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
+          <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
+        </nav>
+      </header>
+      {isContactModalOpen ? <ContactModal onClose={() => setIsContactModalOpen(false)} /> : null}
+    </>
+  );
+};
 
 const SiteFooter = () => (
   <footer className="site-footer" aria-label="Updates and contact">
