@@ -436,7 +436,6 @@ const GlobalHeader = () => (
       <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
       <button type="button" className="home-action-button"><span className="home-action-icon">👤</span>Sign in</button>
       <button type="button" className="home-action-button" onClick={() => window.location.assign("/cart")}><span className="home-action-icon">🛒</span>Cart</button>
-      <button type="button" className="home-action-button"><span className="home-action-icon">💖</span>Wishlist</button>
     </nav>
   </header>
 );
