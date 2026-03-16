@@ -557,6 +557,19 @@ const StorePage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (window.location.hash !== ABOUT_SECTION_HASH) {
+      return;
+    }
+
+    const section = document.querySelector(ABOUT_SECTION_HASH);
+    if (!section) {
+      return;
+    }
+
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   const sizeChartRows = [
     { brandSize: "35", usSize: "4", euSize: "35", shoeWidth: "9.8", footLength: "8.8" },
     { brandSize: "36", usSize: "5", euSize: "36", shoeWidth: "10.1", footLength: "9.1" },
@@ -872,7 +885,7 @@ const StorePage = () => {
         </div>
       </section>
 
-      <section className="card stacked-home-images" aria-label="Additional home images">
+      <section id="home-about-images" className="card stacked-home-images" aria-label="Additional home images">
         <img src="/uploads/abc.jpg" alt="Promotional image top" className="stacked-home-image" />
         <img src="/uploads/dfg.jpg" alt="Promotional image bottom" className="stacked-home-image" />
       </section>
