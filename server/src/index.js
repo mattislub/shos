@@ -2,13 +2,15 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 require("dotenv").config();
 
 const db = require("./db");
 const {
   hasSmtpConfig,
   sendOrderNotificationEmail,
-  sendCustomerOrderConfirmationEmail
+  sendCustomerOrderConfirmationEmail,
+  sendCustomerLoginCodeEmail
 } = require("./mailer");
 
 const app = express();
@@ -25,6 +27,58 @@ app.use("/uploads", express.static(uploadsDir));
 
 const adminUsername = (process.env.ADMIN_USERNAME || "admin").trim();
 const adminPassword = (process.env.ADMIN_PASSWORD || "admin123").trim();
+
+const customerCodeExpiresMinutes = Number(process.env.CUSTOMER_LOGIN_CODE_EXPIRES_MINUTES || 10);
+const customerSessionExpiresDays = Number(process.env.CUSTOMER_SESSION_EXPIRES_DAYS || 30);
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const normalizeCustomerEmail = (value) => String(value || "").trim().toLowerCase();
+
+const hashLoginCode = (email, code) => crypto
+  .createHash("sha256")
+  .update(`${normalizeCustomerEmail(email)}:${String(code)}`)
+  .digest("hex");
+
+const createOtpCode = () => String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0");
+
+const createSessionToken = () => crypto.randomBytes(32).toString("hex");
+
+const requireCustomerSession = async (req, res, next) => {
+  const authHeader = req.headers.authorization || "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Customer authentication is required" });
+  }
+
+  const sessionToken = authHeader.slice(7).trim();
+  if (!sessionToken) {
+    return res.status(401).json({ message: "Customer authentication is required" });
+  }
+
+  try {
+    const sessionResult = await db.query(
+      `SELECT email
+       FROM customer_sessions
+       WHERE session_token = $1
+         AND expires_at > NOW()
+       ORDER BY id DESC
+       LIMIT 1`,
+      [sessionToken]
+    );
+
+    const session = sessionResult.rows[0];
+    if (!session) {
+      return res.status(401).json({ message: "Customer session is invalid or expired" });
+    }
+
+    req.customerEmail = session.email;
+    req.customerSessionToken = sessionToken;
+    return next();
+  } catch (error) {
+    console.error("Failed to validate customer session", error);
+    return res.status(500).json({ message: "Failed to validate customer session" });
+  }
+};
 
 const requireAdminAuth = (req, res, next) => {
   const authHeader = req.headers.authorization || "";
@@ -249,9 +303,8 @@ app.post("/api/orders", async (req, res) => {
     return res.status(400).json({ message: "customer_name and phone are required" });
   }
 
-  const cleanedCustomerEmail = customer_email ? String(customer_email).trim().toLowerCase() : "";
+  const cleanedCustomerEmail = normalizeCustomerEmail(customer_email);
   if (cleanedCustomerEmail) {
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(cleanedCustomerEmail)) {
       return res.status(400).json({ message: "customer_email must be a valid email" });
     }
@@ -276,10 +329,10 @@ app.post("/api/orders", async (req, res) => {
     const cleanedPhone = String(phone).trim();
 
     const orderResult = await db.query(
-      `INSERT INTO store_orders (product_id, customer_name, phone, quantity)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO store_orders (product_id, customer_name, phone, customer_email, quantity)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id, status, created_at`,
-      [product.id, cleanedCustomerName, cleanedPhone, parsedQuantity]
+      [product.id, cleanedCustomerName, cleanedPhone, cleanedCustomerEmail || null, parsedQuantity]
     );
 
     const order = orderResult.rows[0];
@@ -508,6 +561,153 @@ app.get("/api/admin/customers", requireAdminAuth, async (_req, res) => {
   } catch (error) {
     console.error("Failed to load admin customers", error);
     return res.status(500).json({ message: "Failed to load customers" });
+  }
+});
+
+app.post("/api/customer-auth/request-code", async (req, res) => {
+  const cleanedCustomerEmail = normalizeCustomerEmail(req.body?.email);
+
+  if (!cleanedCustomerEmail || !emailPattern.test(cleanedCustomerEmail)) {
+    return res.status(400).json({ message: "email must be a valid email" });
+  }
+
+  const loginCode = createOtpCode();
+  const codeHash = hashLoginCode(cleanedCustomerEmail, loginCode);
+
+  try {
+    await db.query(
+      `INSERT INTO customer_login_codes (email, code_hash, expires_at)
+       VALUES ($1, $2, NOW() + ($3::text || ' minutes')::interval)`,
+      [cleanedCustomerEmail, codeHash, customerCodeExpiresMinutes]
+    );
+
+    try {
+      const emailResult = await sendCustomerLoginCodeEmail({
+        customerEmail: cleanedCustomerEmail,
+        code: loginCode,
+        expiresInMinutes: customerCodeExpiresMinutes
+      });
+
+      if (emailResult.skipped) {
+        console.warn("Customer login code email skipped", {
+          customerEmail: cleanedCustomerEmail,
+          reason: emailResult.reason
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send customer login code email", {
+        customerEmail: cleanedCustomerEmail,
+        message: emailError?.message
+      });
+    }
+
+    return res.status(201).json({ message: "If this email exists, a login code has been sent" });
+  } catch (error) {
+    console.error("Failed to request customer login code", error);
+    return res.status(500).json({ message: "Failed to request login code" });
+  }
+});
+
+app.post("/api/customer-auth/verify-code", async (req, res) => {
+  const cleanedCustomerEmail = normalizeCustomerEmail(req.body?.email);
+  const submittedCode = String(req.body?.code || "").trim();
+
+  if (!cleanedCustomerEmail || !emailPattern.test(cleanedCustomerEmail)) {
+    return res.status(400).json({ message: "email must be a valid email" });
+  }
+
+  if (!/^\d{6}$/.test(submittedCode)) {
+    return res.status(400).json({ message: "code must be exactly 6 digits" });
+  }
+
+  const codeHash = hashLoginCode(cleanedCustomerEmail, submittedCode);
+
+  const dbClient = await db.connect();
+  let isTransactionOpen = false;
+
+  try {
+    await dbClient.query("BEGIN");
+    isTransactionOpen = true;
+
+    const codeResult = await dbClient.query(
+      `SELECT id
+       FROM customer_login_codes
+       WHERE email = $1
+         AND code_hash = $2
+         AND consumed_at IS NULL
+         AND expires_at > NOW()
+       ORDER BY id DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [cleanedCustomerEmail, codeHash]
+    );
+
+    const loginCodeRow = codeResult.rows[0];
+
+    if (!loginCodeRow) {
+      await dbClient.query("ROLLBACK");
+      isTransactionOpen = false;
+      return res.status(401).json({ message: "Invalid or expired code" });
+    }
+
+    await dbClient.query(
+      `UPDATE customer_login_codes
+       SET consumed_at = NOW()
+       WHERE id = $1`,
+      [loginCodeRow.id]
+    );
+
+    const sessionToken = createSessionToken();
+
+    const sessionResult = await dbClient.query(
+      `INSERT INTO customer_sessions (email, session_token, expires_at)
+       VALUES ($1, $2, NOW() + ($3::text || ' days')::interval)
+       RETURNING expires_at`,
+      [cleanedCustomerEmail, sessionToken, customerSessionExpiresDays]
+    );
+
+    await dbClient.query("COMMIT");
+    isTransactionOpen = false;
+
+    return res.json({
+      session_token: sessionToken,
+      email: cleanedCustomerEmail,
+      expires_at: sessionResult.rows[0].expires_at
+    });
+  } catch (error) {
+    if (isTransactionOpen) {
+      await dbClient.query("ROLLBACK");
+    }
+    console.error("Failed to verify customer login code", error);
+    return res.status(500).json({ message: "Failed to verify login code" });
+  } finally {
+    dbClient.release();
+  }
+});
+
+app.get("/api/customer/me/orders", requireCustomerSession, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+         o.id,
+         o.customer_name,
+         o.customer_email,
+         o.phone,
+         o.quantity,
+         o.status,
+         o.created_at,
+         p.title AS product_title
+       FROM store_orders o
+       INNER JOIN store_products p ON p.id = o.product_id
+       WHERE o.customer_email = $1
+       ORDER BY o.created_at DESC`,
+      [req.customerEmail]
+    );
+
+    return res.json({ email: req.customerEmail, orders: result.rows });
+  } catch (error) {
+    console.error("Failed to load customer order history", error);
+    return res.status(500).json({ message: "Failed to load customer order history" });
   }
 });
 

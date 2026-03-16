@@ -186,6 +186,29 @@ const sendOrderNotificationEmail = async ({
   });
 };
 
+const sendCustomerLoginCodeEmail = async ({
+  customerEmail,
+  code,
+  expiresInMinutes
+}) => {
+  const textBody = [
+    "Your Shos login code is:",
+    "",
+    `${normalizeLine(code)}`,
+    "",
+    `The code is valid for ${expiresInMinutes} minutes.`,
+    "If you did not request this code, you can ignore this email.",
+    "",
+    "Shos Team"
+  ].join("\n");
+
+  return sendEmail({
+    to: customerEmail,
+    subject: "Your 6-digit login code",
+    textBody
+  });
+};
+
 const sendCustomerOrderConfirmationEmail = async ({
   orderId,
   customerName,
@@ -217,5 +240,6 @@ const sendCustomerOrderConfirmationEmail = async ({
 module.exports = {
   hasSmtpConfig,
   sendOrderNotificationEmail,
-  sendCustomerOrderConfirmationEmail
+  sendCustomerOrderConfirmationEmail,
+  sendCustomerLoginCodeEmail
 };
