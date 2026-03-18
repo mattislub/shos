@@ -2074,6 +2074,7 @@ const PrivacyShippingPolicyPage = () => (
         <li>Delivery times may vary during holidays, peak periods, weather events, or carrier delays.</li>
         <li>Please ensure your shipping details are accurate to avoid delivery issues.</li>
         <li>If a shipment is delayed or returned, our support team will contact you with next steps.</li>
+        <li>Returns are at your own cost.</li>
       </ul>
     </section>
     <SiteFooter />
