@@ -72,6 +72,7 @@ Note: login-code delivery depends on SMTP configuration. If SMTP is not configur
 
 - `GET /api/product` — מחזיר את המוצר הפעיל היחיד כולל מערך תמונות `images`.
 - `POST /api/orders` — יוצר הזמנה חדשה (שם, טלפון, כמות, ו-`customer_email` אופציונלי למייל אישור ללקוח).
+- `POST /api/contact-requests` — שולח פנייה מטופס יצירת הקשר למייל המוגדר ב-`SMTP_TO_ORDER_NOTIFICATIONS`.
 - `PUT /api/admin/product` — עדכון מוצר פעיל והעלאת תמונות מקבצים מקומיים (נשמרות פיזית בשרת תחת `/uploads`).
 - `POST /api/customer-auth/request-code` — request a 6-digit login code by email.
 - `POST /api/customer-auth/verify-code` — verify the code and return a customer `session_token`.

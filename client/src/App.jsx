@@ -475,31 +475,88 @@ const useProduct = () => {
 };
 
 
-const ContactModal = ({ onClose }) => (
-  <div className="modal-backdrop" role="presentation" onClick={onClose}>
-    <div
-      className="modal-card"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Contact details"
-      onClick={(event) => event.stopPropagation()}
-    >
-      <h2>Contact us</h2>
-      <p>We are happy to help with any question about your order or the product.</p>
-      <ul className="contact-list">
-        <li><strong>Email:</strong> info@sholors-loafers.com</li>
-        <li><strong>Address:</strong> 199 Lee Ave StE 684, Brooklyn NY 11211</li>
-      </ul>
-      <a
-        className="contact-mail-button"
-        href="mailto:info@sholors-loafers.com?subject=%D7%A4%D7%A0%D7%99%D7%99%D7%94%20%D7%93%D7%A8%D7%9A%20%D7%94%D7%90%D7%AA%D7%A8&body=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%91%D7%A0%D7%95%D7%A9%D7%90%20..."
-    >
-        Send contact email
-      </a>
-      <button type="button" onClick={onClose}>Close</button>
+const ContactModal = ({ onClose }) => {
+  const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const cleanedMessage = message.trim();
+    if (!cleanedMessage) {
+      setSubmitError("נא לכתוב הודעה לחנות לפני השליחה.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const response = await fetch(`${apiUrl}/contact-requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: cleanedMessage })
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.message || "Failed to send contact request");
+      }
+
+      setIsSubmitted(true);
+      setMessage("");
+    } catch (error) {
+      console.error("Failed to send contact request", error);
+      setSubmitError("לא הצלחנו לשלוח את ההודעה כרגע. נסו שוב בעוד כמה דקות.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <div
+        className="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label="יצירת קשר"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2>יצירת קשר</h2>
+        <p>כתבו לנו הודעה וצוות החנות יחזור אליכם בהקדם.</p>
+        <ul className="contact-list">
+          <li><strong>אימייל:</strong> info@sholors-loafers.com</li>
+          <li><strong>כתובת:</strong> 199 Lee Ave StE 684, Brooklyn NY 11211</li>
+        </ul>
+        <form className="contact-form" onSubmit={handleSubmit}>
+          <label className="contact-form-label" htmlFor="contact-message">הודעה לחנות</label>
+          <textarea
+            id="contact-message"
+            className="contact-form-textarea"
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder="כתבו כאן את פרטי הפנייה שלכם"
+            rows={5}
+            disabled={isSubmitting || isSubmitted}
+            required
+          />
+          {submitError ? <p className="contact-form-feedback contact-form-feedback-error">{submitError}</p> : null}
+          {isSubmitted ? <p className="contact-form-feedback contact-form-feedback-success">צוות החנות ייצור איתכם קשר בימים הקרובים.</p> : null}
+          <div className="contact-form-actions">
+            <button type="submit" disabled={isSubmitting || isSubmitted}>
+              {isSubmitting ? "שולח..." : "שליחה"}
+            </button>
+            <button type="button" className="contact-form-secondary-button" onClick={onClose}>סגירה</button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const GlobalHeader = ({ cartItemCount = 0 }) => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
