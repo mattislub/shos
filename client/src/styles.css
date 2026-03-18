@@ -1065,3 +1065,22 @@ h1 {
   display: grid;
   gap: 10px;
 }
+
+.closed-page {
+  align-content: center;
+}
+
+.closed-card {
+  max-width: 720px;
+  text-align: center;
+  display: grid;
+  gap: 12px;
+  padding: 40px 28px;
+}
+
+.closed-reopen-time {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #312e81;
+}

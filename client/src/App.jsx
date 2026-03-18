@@ -211,6 +211,16 @@ const getCartItemCount = (items) => (Array.isArray(items)
 
 const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : "-");
+const formatBrooklynDateTime = (value) => (value
+  ? new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/New_York"
+  }).format(new Date(value))
+  : "-");
 
 const VISITOR_STATUS_LABELS = {
   active: "Active (last 7 days)",
@@ -421,6 +431,44 @@ const fetchAdminApi = async (path, options = {}) => {
   }
 
   return response;
+};
+
+
+const useSiteAvailability = () => {
+  const [shabbatStatus, setShabbatStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadStatus = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${apiUrl}/site-status`, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`Failed to load site status: ${response.status}`);
+        }
+
+        const payload = await response.json();
+        setShabbatStatus(payload?.shabbat_status || null);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Failed to load site availability", error);
+          setShabbatStatus(null);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStatus();
+    return () => controller.abort();
+  }, []);
+
+  return {
+    shabbatStatus,
+    loading
+  };
 };
 
 const useProduct = () => {
@@ -2051,6 +2099,30 @@ const AccountPage = () => {
   );
 };
 
+
+const ClosedForShabbatPage = ({ shabbatStatus, loading }) => (
+  <main className="page closed-page">
+    <section className="card closed-card">
+      <p className="home-eyebrow">Shabbat mode</p>
+      <h1 className="product-step-main-title">The store is currently closed for Shabbat</h1>
+      {loading ? <p className="status">Checking the current halachic time for Brooklyn, New York...</p> : null}
+      <p>
+        Orders and customer access are paused from sunset on Friday until Havdalah on Saturday,
+        based on Brooklyn, New York zmanim.
+      </p>
+      <p className="closed-reopen-time">
+        {shabbatStatus?.reopensAt
+          ? `The site will reopen on ${formatBrooklynDateTime(shabbatStatus.reopensAt)} (Brooklyn time).`
+          : "The reopening time will appear here as soon as it is available."}
+      </p>
+      <p className="home-subtitle">
+        Thank you for your patience. Please come back after Shabbat.
+      </p>
+    </section>
+    <SiteFooter />
+  </main>
+);
+
 const PrivacyShippingPolicyPage = () => (
   <main className="page product-page">
     <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
@@ -2086,6 +2158,7 @@ function App() {
     applyPageSeo(window.location.pathname);
   }, []);
 
+  const { shabbatStatus, loading: siteStatusLoading } = useSiteAvailability();
   const isCartPage = window.location.pathname === "/cart";
   const isAdminPage = window.location.pathname === "/admin";
   const isAdminCustomersPage = window.location.pathname === "/admin/customers";
@@ -2093,6 +2166,11 @@ function App() {
   const isShippingDetailsPage = window.location.pathname === "/shipping-details";
   const isPolicyPage = window.location.pathname === "/privacy-shipping-policy";
   const isAccountPage = window.location.pathname === "/account";
+  const isAdminRoute = isAdminPage || isAdminCustomersPage || isAdminOrdersPage;
+
+  if (!isAdminRoute && shabbatStatus?.isClosed) {
+    return <ClosedForShabbatPage shabbatStatus={shabbatStatus} loading={siteStatusLoading} />;
+  }
   if (isAdminCustomersPage) {
     return <AdminAuthGate><AdminCustomersPage /></AdminAuthGate>;
   }
