@@ -1047,19 +1047,63 @@ h1 {
   cursor: pointer;
 }
 
-
-.contact-mail-button {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #0ea5e9, #2563eb);
-  color: #ffffff;
-  text-decoration: none;
-  padding: 10px 12px;
-  font-weight: 700;
+.modal-card button:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
+.contact-form {
+  display: grid;
+  gap: 10px;
+}
+
+.contact-form-label {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.contact-form-textarea {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  line-height: 1.6;
+  background: #f8fafc;
+}
+
+.contact-form-textarea:focus-visible {
+  outline: 3px solid rgba(99, 102, 241, 0.22);
+  border-color: #6366f1;
+}
+
+.contact-form-feedback {
+  margin: 0;
+  font-size: 14px;
+}
+
+.contact-form-feedback-error {
+  color: #b91c1c;
+}
+
+.contact-form-feedback-success {
+  color: #047857;
+  font-weight: 600;
+}
+
+.contact-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.contact-form-secondary-button {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: none !important;
+}
 
 .cart-actions-card {
   display: grid;

@@ -289,6 +289,37 @@ const sendCustomerLoginCodeEmail = async ({
   });
 };
 
+const sendContactRequestEmail = async ({
+  message,
+  createdAt
+}) => {
+  const createdAtText = createdAt ? new Date(createdAt).toLocaleString("en-US") : new Date().toLocaleString("en-US");
+  const normalizedMessage = String(message || "").trim().replace(/\r\n/g, "\n");
+  const safeMessage = escapeHtml(normalizedMessage).replace(/\n/g, "<br />");
+  const textBody = [
+    "A new contact request was submitted on the website.",
+    `Created At: ${normalizeLine(createdAtText)}`,
+    "",
+    "Message:",
+    normalizedMessage
+  ].join("\n");
+
+  return sendEmail({
+    to: smtpTo,
+    subject: "New Contact Request",
+    textBody,
+    htmlBody: buildStyledEmail({
+      title: "New contact request",
+      subtitle: "A visitor sent a message from the website contact form.",
+      accentColor: "#0f766e",
+      bodyContent: `
+        <p style="margin:0 0 14px;font-size:14px;color:#4b5563;">Created at: <strong>${escapeHtml(createdAtText)}</strong></p>
+        <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:12px;padding:14px;font-size:15px;line-height:1.7;color:#134e4a;">${safeMessage}</div>
+      `
+    })
+  });
+};
+
 const sendCustomerOrderConfirmationEmail = async ({
   orderId,
   customerName,
@@ -346,5 +377,6 @@ module.exports = {
   hasSmtpConfig,
   sendOrderNotificationEmail,
   sendCustomerOrderConfirmationEmail,
-  sendCustomerLoginCodeEmail
+  sendCustomerLoginCodeEmail,
+  sendContactRequestEmail
 };

@@ -11,7 +11,8 @@ const {
   hasSmtpConfig,
   sendOrderNotificationEmail,
   sendCustomerOrderConfirmationEmail,
-  sendCustomerLoginCodeEmail
+  sendCustomerLoginCodeEmail,
+  sendContactRequestEmail
 } = require("./mailer");
 
 const app = express();
@@ -518,17 +519,31 @@ app.put("/api/admin/shipping-price", requireAdminAuth, async (req, res) => {
   }
 });
 
-app.get("/api/site-status", async (_req, res) => {
+app.post("/api/contact-requests", async (req, res) => {
+  const message = String(req.body?.message || "").trim();
+
+  if (!message) {
+    return res.status(400).json({ message: "message is required" });
+  }
+
   try {
-    const shabbatStatus = await getShabbatStatus();
-    return res.json({ shabbat_status: shabbatStatus });
+    const emailResult = await sendContactRequestEmail({
+      message,
+      createdAt: new Date().toISOString()
+    });
+
+    if (emailResult.skipped) {
+      return res.status(503).json({ message: "Contact email is not configured" });
+    }
+
+    return res.status(201).json({ success: true });
   } catch (error) {
-    console.error("Failed to fetch site status", error);
-    return res.status(500).json({ message: "Failed to fetch site status" });
+    console.error("Failed to send contact request", error);
+    return res.status(500).json({ message: "Failed to send contact request" });
   }
 });
 
-app.post("/api/orders", requireStoreOpen, async (req, res) => {
+app.post("/api/orders", async (req, res) => {
   const { customer_name, phone, quantity, customer_email } = req.body || {};
 
   if (!customer_name || !phone) {

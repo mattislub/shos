@@ -82,9 +82,9 @@ Note: login-code delivery depends on SMTP configuration. If SMTP is not configur
 
 ## API עיקרי
 
-- `GET /api/product` — מחזיר את המוצר הפעיל היחיד כולל מערך תמונות `images` וגם `shabbat_status`.
-- `GET /api/site-status` — מחזיר סטטוס פתוח/סגור של האתר וזמן פתיחה מחדש במוצאי שבת.
-- `POST /api/orders` — יוצר הזמנה חדשה, אלא אם האתר סגור לשבת.
+- `GET /api/product` — מחזיר את המוצר הפעיל היחיד כולל מערך תמונות `images`.
+- `POST /api/orders` — יוצר הזמנה חדשה (שם, טלפון, כמות, ו-`customer_email` אופציונלי למייל אישור ללקוח).
+- `POST /api/contact-requests` — sends contact-form submissions to the email configured in `SMTP_TO_ORDER_NOTIFICATIONS`.
 - `PUT /api/admin/product` — עדכון מוצר פעיל והעלאת תמונות מקבצים מקומיים (נשמרות פיזית בשרת תחת `/uploads`).
 - `POST /api/customer-auth/request-code` — request a 6-digit login code by email.
 - `POST /api/customer-auth/verify-code` — verify the code and return a customer `session_token`.
