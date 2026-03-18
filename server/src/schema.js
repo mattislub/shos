@@ -45,9 +45,9 @@ const initializeDatabaseStructure = async () => {
   );
 
   await db.query(
-    `INSERT INTO store_site_content (home_hero_image_url)
-     VALUES ($1)`,
-    [DEFAULT_HOME_HERO_IMAGE]
+    `INSERT INTO store_site_content (home_hero_image_url, shipping_price_usd)
+     VALUES ($1, $2)`,
+    [DEFAULT_HOME_HERO_IMAGE, 0]
   );
 };
 
