@@ -3,6 +3,7 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const https = require("https");
 require("dotenv").config();
 
 const db = require("./db");
@@ -24,6 +25,136 @@ const DEFAULT_HOME_HERO_IMAGE =
   "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=80";
 
 let productPriceColumnPromise;
+
+const SHABBAT_LOCATION = {
+  name: "Brooklyn, New York",
+  latitude: 40.6501,
+  longitude: -73.9496,
+  timezone: "America/New_York"
+};
+const SHABBAT_API_CACHE_TTL_MS = 5 * 60 * 1000;
+
+let shabbatStatusCache = {
+  value: null,
+  expiresAt: 0
+};
+
+const httpsGetJson = (url) => new Promise((resolve, reject) => {
+  https.get(url, (response) => {
+    let rawData = "";
+
+    response.on("data", (chunk) => {
+      rawData += chunk;
+    });
+
+    response.on("end", () => {
+      if (response.statusCode && response.statusCode >= 400) {
+        reject(new Error(`Hebcal request failed with status ${response.statusCode}`));
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(rawData));
+      } catch (error) {
+        reject(new Error(`Failed to parse Hebcal response: ${error.message}`));
+      }
+    });
+  }).on("error", reject);
+});
+
+const findHebcalItemByCategory = (items, category) => (Array.isArray(items)
+  ? items.find((item) => item?.category === category && item?.date)
+  : null);
+
+const buildShabbatStatusPayload = ({ candles, havdalah, fetchedAt, source }) => {
+  const now = new Date();
+  const candlesAt = candles?.date ? new Date(candles.date) : null;
+  const havdalahAt = havdalah?.date ? new Date(havdalah.date) : null;
+  const isClosed = Boolean(candlesAt && havdalahAt && now >= candlesAt && now < havdalahAt);
+
+  return {
+    isClosed,
+    locationName: SHABBAT_LOCATION.name,
+    timezone: SHABBAT_LOCATION.timezone,
+    fetchedAt,
+    source,
+    closesAt: candlesAt ? candlesAt.toISOString() : null,
+    reopensAt: havdalahAt ? havdalahAt.toISOString() : null,
+    message: isClosed
+      ? "The store is closed for Shabbat and will reopen after Havdalah in Brooklyn, New York."
+      : "The store is open."
+  };
+};
+
+const fetchBrooklynShabbatStatus = async () => {
+  const params = new URLSearchParams({
+    cfg: "json",
+    latitude: String(SHABBAT_LOCATION.latitude),
+    longitude: String(SHABBAT_LOCATION.longitude),
+    tzid: SHABBAT_LOCATION.timezone,
+    M: "on",
+    leyning: "off"
+  });
+
+  const payload = await httpsGetJson(`https://www.hebcal.com/shabbat?${params.toString()}`);
+  const candles = findHebcalItemByCategory(payload?.items, "candles");
+  const havdalah = findHebcalItemByCategory(payload?.items, "havdalah");
+
+  if (!candles || !havdalah) {
+    throw new Error("Hebcal response is missing candle-lighting or Havdalah times");
+  }
+
+  return buildShabbatStatusPayload({
+    candles,
+    havdalah,
+    fetchedAt: new Date().toISOString(),
+    source: "hebcal-shabbat-api"
+  });
+};
+
+const getShabbatStatus = async () => {
+  if (shabbatStatusCache.value && Date.now() < shabbatStatusCache.expiresAt) {
+    return shabbatStatusCache.value;
+  }
+
+  try {
+    const status = await fetchBrooklynShabbatStatus();
+    shabbatStatusCache = {
+      value: status,
+      expiresAt: Date.now() + SHABBAT_API_CACHE_TTL_MS
+    };
+    return status;
+  } catch (error) {
+    if (shabbatStatusCache.value) {
+      console.warn("Falling back to cached Shabbat status", { message: error.message });
+      return shabbatStatusCache.value;
+    }
+
+    console.error("Failed to load Shabbat status", error);
+    return {
+      isClosed: false,
+      locationName: SHABBAT_LOCATION.name,
+      timezone: SHABBAT_LOCATION.timezone,
+      fetchedAt: new Date().toISOString(),
+      source: "fallback-open",
+      closesAt: null,
+      reopensAt: null,
+      message: "The store is open."
+    };
+  }
+};
+
+const requireStoreOpen = async (_req, res, next) => {
+  const shabbatStatus = await getShabbatStatus();
+  if (shabbatStatus.isClosed) {
+    return res.status(403).json({
+      message: shabbatStatus.message,
+      shabbat_status: shabbatStatus
+    });
+  }
+
+  return next();
+};
 
 app.use(cors());
 app.use(express.json({ limit: "25mb" }));
@@ -296,14 +427,22 @@ const resolveImageUrl = (imagePayload) => {
 
 app.get("/api/product", async (_req, res) => {
   try {
-    const product = await loadActiveProduct();
-    const siteContent = await loadSiteContent();
+    const [product, siteContent, shabbatStatus] = await Promise.all([
+      loadActiveProduct(),
+      loadSiteContent(),
+      getShabbatStatus()
+    ]);
 
     if (!product) {
       return res.status(404).json({ message: "No active product found" });
     }
 
-    return res.json({ product, home_hero_image_url: siteContent.homeHeroImageUrl, shipping_price_usd: siteContent.shippingPriceUsd });
+    return res.json({
+      product,
+      home_hero_image_url: siteContent.homeHeroImageUrl,
+      shipping_price_usd: siteContent.shippingPriceUsd,
+      shabbat_status: shabbatStatus
+    });
   } catch (error) {
     console.error("Failed to fetch active product", error);
     return res.status(500).json({ message: "Failed to load product" });
@@ -672,7 +811,7 @@ app.get("/api/admin/customers", requireAdminAuth, async (_req, res) => {
   }
 });
 
-app.post("/api/customer-auth/request-code", async (req, res) => {
+app.post("/api/customer-auth/request-code", requireStoreOpen, async (req, res) => {
   const cleanedCustomerEmail = normalizeCustomerEmail(req.body?.email);
 
   if (!cleanedCustomerEmail || !emailPattern.test(cleanedCustomerEmail)) {
@@ -716,7 +855,7 @@ app.post("/api/customer-auth/request-code", async (req, res) => {
   }
 });
 
-app.post("/api/customer-auth/verify-code", async (req, res) => {
+app.post("/api/customer-auth/verify-code", requireStoreOpen, async (req, res) => {
   const cleanedCustomerEmail = normalizeCustomerEmail(req.body?.email);
   const submittedCode = String(req.body?.code || "").trim();
 
@@ -793,7 +932,7 @@ app.post("/api/customer-auth/verify-code", async (req, res) => {
   }
 });
 
-app.get("/api/customer/me/orders", requireCustomerSession, async (req, res) => {
+app.get("/api/customer/me/orders", requireStoreOpen, requireCustomerSession, async (req, res) => {
   try {
     const result = await db.query(
       `SELECT

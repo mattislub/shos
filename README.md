@@ -68,6 +68,18 @@ Optional environment variables:
 
 Note: login-code delivery depends on SMTP configuration. If SMTP is not configured, the server will store the code but users will not receive it by email.
 
+
+## מצב שבת אוטומטי
+
+האתר הציבורי נסגר אוטומטית בשבת לפי זמני ברוקלין, ניו יורק (אזור זמן `America/New_York`).
+
+- הסגירה מתחילה בכניסת שבת ביום שישי.
+- האתר נפתח מחדש במוצאי שבת לפי זמן `Havdalah`.
+- בזמן הסגירה הלקוח רואה מסך חסימה עם זמן הפתיחה מחדש.
+- ממשק הניהול (`/admin`) נשאר זמין גם בזמן שבת.
+
+החישוב מתבצע דרך Hebcal Shabbat API לפי הקואורדינטות של ברוקלין.
+
 ## API עיקרי
 
 - `GET /api/product` — מחזיר את המוצר הפעיל היחיד כולל מערך תמונות `images`.
