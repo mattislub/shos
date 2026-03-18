@@ -486,7 +486,7 @@ const ContactModal = ({ onClose }) => {
 
     const cleanedMessage = message.trim();
     if (!cleanedMessage) {
-      setSubmitError("נא לכתוב הודעה לחנות לפני השליחה.");
+      setSubmitError("Please enter a message to the store before sending.");
       return;
     }
 
@@ -511,7 +511,7 @@ const ContactModal = ({ onClose }) => {
       setMessage("");
     } catch (error) {
       console.error("Failed to send contact request", error);
-      setSubmitError("לא הצלחנו לשלוח את ההודעה כרגע. נסו שוב בעוד כמה דקות.");
+      setSubmitError("We could not send your message right now. Please try again in a few minutes.");
     } finally {
       setIsSubmitting(false);
     }
@@ -523,34 +523,34 @@ const ContactModal = ({ onClose }) => {
         className="modal-card"
         role="dialog"
         aria-modal="true"
-        aria-label="יצירת קשר"
+        aria-label="Contact us"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2>יצירת קשר</h2>
-        <p>כתבו לנו הודעה וצוות החנות יחזור אליכם בהקדם.</p>
+        <h2>Contact us</h2>
+        <p>Write us a message and our store team will get back to you soon.</p>
         <ul className="contact-list">
-          <li><strong>אימייל:</strong> info@sholors-loafers.com</li>
-          <li><strong>כתובת:</strong> 199 Lee Ave StE 684, Brooklyn NY 11211</li>
+          <li><strong>Email:</strong> info@sholors-loafers.com</li>
+          <li><strong>Address:</strong> 199 Lee Ave StE 684, Brooklyn NY 11211</li>
         </ul>
         <form className="contact-form" onSubmit={handleSubmit}>
-          <label className="contact-form-label" htmlFor="contact-message">הודעה לחנות</label>
+          <label className="contact-form-label" htmlFor="contact-message">Message to the store</label>
           <textarea
             id="contact-message"
             className="contact-form-textarea"
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            placeholder="כתבו כאן את פרטי הפנייה שלכם"
+            placeholder="Write your message here"
             rows={5}
             disabled={isSubmitting || isSubmitted}
             required
           />
           {submitError ? <p className="contact-form-feedback contact-form-feedback-error">{submitError}</p> : null}
-          {isSubmitted ? <p className="contact-form-feedback contact-form-feedback-success">צוות החנות ייצור איתכם קשר בימים הקרובים.</p> : null}
+          {isSubmitted ? <p className="contact-form-feedback contact-form-feedback-success">The store team will contact you in the coming days.</p> : null}
           <div className="contact-form-actions">
             <button type="submit" disabled={isSubmitting || isSubmitted}>
-              {isSubmitting ? "שולח..." : "שליחה"}
+              {isSubmitting ? "Sending..." : "Send"}
             </button>
-            <button type="button" className="contact-form-secondary-button" onClick={onClose}>סגירה</button>
+            <button type="button" className="contact-form-secondary-button" onClick={onClose}>Close</button>
           </div>
         </form>
       </div>
