@@ -54,6 +54,7 @@ CREATE TABLE customer_sessions (
 CREATE TABLE store_site_content (
   id SERIAL PRIMARY KEY,
   home_hero_image_url TEXT NOT NULL,
+  shipping_price_usd INTEGER NOT NULL DEFAULT 0 CHECK (shipping_price_usd >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

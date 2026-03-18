@@ -19,6 +19,9 @@ const port = process.env.PORT || 3001;
 const uploadsDir = path.join(__dirname, "..", "uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
+const DEFAULT_HOME_HERO_IMAGE =
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=80";
+
 let productPriceColumnPromise;
 
 app.use(cors());
@@ -184,15 +187,18 @@ const loadActiveProduct = async () => {
   return mapProductWithImages(product, imagesResult.rows);
 };
 
-const loadHomeHeroImage = async () => {
+const loadSiteContent = async () => {
   const result = await db.query(
-    `SELECT home_hero_image_url
+    `SELECT home_hero_image_url, shipping_price_usd
      FROM store_site_content
      ORDER BY id
      LIMIT 1`
   );
 
-  return result.rows[0]?.home_hero_image_url || "";
+  return {
+    homeHeroImageUrl: result.rows[0]?.home_hero_image_url || "",
+    shippingPriceUsd: Number(result.rows[0]?.shipping_price_usd || 0)
+  };
 };
 
 const ensureCustomerAuthTables = async () => {
@@ -222,6 +228,19 @@ const ensureStoreOrdersCustomerEmailColumn = async () => {
   await db.query(
     `ALTER TABLE store_orders
      ADD COLUMN IF NOT EXISTS customer_email TEXT`
+  );
+};
+
+const ensureStoreSiteContentShippingPriceColumn = async () => {
+  await db.query(
+    `ALTER TABLE store_site_content
+     ADD COLUMN IF NOT EXISTS shipping_price_usd INTEGER NOT NULL DEFAULT 0`
+  );
+
+  await db.query(
+    `UPDATE store_site_content
+     SET shipping_price_usd = 0
+     WHERE shipping_price_usd IS NULL OR shipping_price_usd < 0`
   );
 };
 
@@ -277,13 +296,13 @@ const resolveImageUrl = (imagePayload) => {
 app.get("/api/product", async (_req, res) => {
   try {
     const product = await loadActiveProduct();
-    const homeHeroImageUrl = await loadHomeHeroImage();
+    const siteContent = await loadSiteContent();
 
     if (!product) {
       return res.status(404).json({ message: "No active product found" });
     }
 
-    return res.json({ product, home_hero_image_url: homeHeroImageUrl });
+    return res.json({ product, home_hero_image_url: siteContent.homeHeroImageUrl, shipping_price_usd: siteContent.shippingPriceUsd });
   } catch (error) {
     console.error("Failed to fetch active product", error);
     return res.status(500).json({ message: "Failed to load product" });
@@ -305,9 +324,9 @@ app.put("/api/admin/home-hero", requireAdminAuth, async (req, res) => {
 
     if (!existing) {
       await db.query(
-        `INSERT INTO store_site_content (home_hero_image_url)
-         VALUES ($1)`,
-        [imageUrl]
+        `INSERT INTO store_site_content (home_hero_image_url, shipping_price_usd)
+         VALUES ($1, $2)`,
+        [imageUrl, 0]
       );
     } else {
       await db.query(
@@ -323,6 +342,40 @@ app.put("/api/admin/home-hero", requireAdminAuth, async (req, res) => {
   } catch (error) {
     console.error("Failed to update home hero image", error);
     return res.status(500).json({ message: "Failed to update home hero image" });
+  }
+});
+
+app.put("/api/admin/shipping-price", requireAdminAuth, async (req, res) => {
+  const parsedShippingPrice = Number(req.body?.shipping_price_usd);
+
+  if (!Number.isInteger(parsedShippingPrice) || parsedShippingPrice < 0) {
+    return res.status(400).json({ message: "shipping_price_usd must be a non-negative integer" });
+  }
+
+  try {
+    const existingResult = await db.query("SELECT id, home_hero_image_url FROM store_site_content ORDER BY id LIMIT 1");
+    const existing = existingResult.rows[0];
+
+    if (!existing) {
+      await db.query(
+        `INSERT INTO store_site_content (home_hero_image_url, shipping_price_usd)
+         VALUES ($1, $2)`,
+        [DEFAULT_HOME_HERO_IMAGE, parsedShippingPrice]
+      );
+    } else {
+      await db.query(
+        `UPDATE store_site_content
+         SET shipping_price_usd = $1,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [parsedShippingPrice, existing.id]
+      );
+    }
+
+    return res.json({ shipping_price_usd: parsedShippingPrice });
+  } catch (error) {
+    console.error("Failed to update shipping price", error);
+    return res.status(500).json({ message: "Failed to update shipping price" });
   }
 });
 
@@ -749,6 +802,7 @@ const start = async () => {
   try {
     await ensureCustomerAuthTables();
     await ensureStoreOrdersCustomerEmailColumn();
+    await ensureStoreSiteContentShippingPriceColumn();
 
     app.listen(port, () => {
       console.log(`Server listening on port ${port}`);

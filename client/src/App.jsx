@@ -426,6 +426,7 @@ const fetchAdminApi = async (path, options = {}) => {
 const useProduct = () => {
   const [product, setProduct] = useState(null);
   const [homeHeroImageUrl, setHomeHeroImageUrl] = useState(fallbackHomeHeroImage);
+  const [shippingPriceUsd, setShippingPriceUsd] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -443,12 +444,14 @@ const useProduct = () => {
         const payload = await response.json();
         setProduct(normalizeProduct(payload.product || fallbackProduct));
         setHomeHeroImageUrl(toAbsoluteImageUrl(payload.home_hero_image_url || fallbackHomeHeroImage));
+        setShippingPriceUsd(Number(payload.shipping_price_usd || 0));
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error("Product update from server failed:", err);
           setError("We couldn't load the product data from the server. Showing fallback content.");
           setProduct(normalizeProduct(fallbackProduct));
           setHomeHeroImageUrl(fallbackHomeHeroImage);
+          setShippingPriceUsd(0);
         }
       } finally {
         setLoading(false);
@@ -459,7 +462,16 @@ const useProduct = () => {
     return () => controller.abort();
   }, []);
 
-  return { product, setProduct, homeHeroImageUrl, setHomeHeroImageUrl, loading, error };
+  return {
+    product,
+    setProduct,
+    homeHeroImageUrl,
+    setHomeHeroImageUrl,
+    shippingPriceUsd,
+    setShippingPriceUsd,
+    loading,
+    error
+  };
 };
 
 
@@ -983,7 +995,16 @@ const AdminAuthGate = ({ children }) => {
 };
 
 const AdminPage = () => {
-  const { product, setProduct, homeHeroImageUrl, setHomeHeroImageUrl, loading, error } = useProduct();
+  const {
+    product,
+    setProduct,
+    homeHeroImageUrl,
+    setHomeHeroImageUrl,
+    shippingPriceUsd,
+    setShippingPriceUsd,
+    loading,
+    error
+  } = useProduct();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priceUsd, setPriceUsd] = useState("");
@@ -996,6 +1017,8 @@ const AdminPage = () => {
   const [heroFile, setHeroFile] = useState(null);
   const [status, setStatus] = useState("");
   const [heroStatus, setHeroStatus] = useState("");
+  const [shippingPriceInput, setShippingPriceInput] = useState("0");
+  const [shippingStatus, setShippingStatus] = useState("");
 
   useEffect(() => {
     const current = normalizeProduct(product || fallbackProduct);
@@ -1004,6 +1027,10 @@ const AdminPage = () => {
     setPriceUsd(String((current.price_usd || 0) / 100));
     setCtaText(current.cta_text);
   }, [product]);
+
+  useEffect(() => {
+    setShippingPriceInput(String((shippingPriceUsd || 0) / 100));
+  }, [shippingPriceUsd]);
 
   const onFilesSelected = (event) => {
     const files = Array.from(event.target.files || []);
@@ -1161,6 +1188,37 @@ const AdminPage = () => {
     }
   };
 
+  const saveShippingPrice = async (event) => {
+    event.preventDefault();
+    setShippingStatus("");
+
+    const parsedShippingPrice = Number(shippingPriceInput);
+    if (!Number.isFinite(parsedShippingPrice) || parsedShippingPrice < 0) {
+      setShippingStatus("Invalid shipping price.");
+      return;
+    }
+
+    try {
+      const response = await fetchAdminApi("/admin/shipping-price", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shipping_price_usd: Math.round(parsedShippingPrice * 100)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("shipping price save failed");
+      }
+
+      const payload = await response.json();
+      setShippingPriceUsd(Number(payload.shipping_price_usd || 0));
+      setShippingStatus("Shipping price saved successfully.");
+    } catch (_error) {
+      setShippingStatus("Saving shipping price failed.");
+    }
+  };
+
   const saveHomeHero = async (event) => {
     event.preventDefault();
     setHeroStatus("");
@@ -1250,6 +1308,20 @@ const AdminPage = () => {
                 placeholder="Price in USD"
               />
               <input value={ctaText} onChange={(event) => setCtaText(event.target.value)} placeholder="Button text" />
+              <label>
+                Shipping price in USD
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={shippingPriceInput}
+                  onChange={(event) => setShippingPriceInput(event.target.value)}
+                  placeholder="Shipping price in USD"
+                />
+              </label>
+              <button type="button" onClick={saveShippingPrice}>Save shipping price</button>
+              {shippingStatus ? <p className="status">{shippingStatus}</p> : null}
+              <p className="status">Current shipping price: {formatUsdCents(shippingPriceUsd)}</p>
               <label className="file-label">
                 Upload product images (you can choose multiple files)
                 <input type="file" accept="image/*" multiple onChange={onFilesSelected} />
@@ -1575,6 +1647,7 @@ const AdminOrdersPage = () => {
 
 const CartPage = () => {
   const [items, setItems] = useState(() => readCartItems());
+  const { shippingPriceUsd } = useProduct();
 
   const persistItems = (nextItems) => {
     setItems(nextItems);
@@ -1614,6 +1687,7 @@ const CartPage = () => {
     (sum, item) => sum + (item.price_usd || item.price_ils || 0) * (item.quantity || 1),
     0
   );
+  const orderTotalUsd = totalUsd + shippingPriceUsd;
 
   return (
     <main className="page product-page">
@@ -1683,7 +1757,13 @@ const CartPage = () => {
           </article>
         ))}
 
-        {items.length > 0 ? <p className="status">Total: {formatUsdCents(totalUsd)}</p> : null}
+        {items.length > 0 ? (
+          <>
+            <p className="status">Products total: {formatUsdCents(totalUsd)}</p>
+            <p className="status">Shipping: {formatUsdCents(shippingPriceUsd)}</p>
+            <p className="status">Order total: {formatUsdCents(orderTotalUsd)}</p>
+          </>
+        ) : null}
 
         {items.length > 0 ? (
           <button
@@ -1709,6 +1789,11 @@ const CartPage = () => {
 
 const ShippingDetailsPage = () => {
   const [isPaymentNoticeOpen, setIsPaymentNoticeOpen] = useState(false);
+  const { shippingPriceUsd } = useProduct();
+  const cartSubtotalUsd = readCartItems().reduce(
+    (sum, item) => sum + (item.price_usd || item.price_ils || 0) * (item.quantity || 1),
+    0
+  );
 
   const submitShippingDetails = (event) => {
     event.preventDefault();
@@ -1723,6 +1808,9 @@ const ShippingDetailsPage = () => {
         <p className="home-eyebrow">CHECKOUT</p>
         <h2 className="product-step-main-title">Shipping details</h2>
         <p className="home-subtitle">Fill in all required fields for shipping within the United States.</p>
+        <p className="status">Products total: {formatUsdCents(cartSubtotalUsd)}</p>
+        <p className="status">Shipping price: {formatUsdCents(shippingPriceUsd)}</p>
+        <p className="status">Estimated order total: {formatUsdCents(cartSubtotalUsd + shippingPriceUsd)}</p>
 
         <form className="order-form" onSubmit={submitShippingDetails}>
           <input name="firstName" autoComplete="given-name" required placeholder="First name" />
