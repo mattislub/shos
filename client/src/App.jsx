@@ -475,14 +475,12 @@ const ContactModal = ({ onClose }) => (
       <h2>Contact us</h2>
       <p>We are happy to help with any question about your order or the product.</p>
       <ul className="contact-list">
-        <li><strong>Phone:</strong> 03-555-1234</li>
-        <li><strong>Email:</strong> hello@shos.co.il</li>
-        <li><strong>WhatsApp:</strong> 050-123-4567</li>
-        <li><strong>Business hours:</strong> Sun-Thu 09:00-18:00</li>
+        <li><strong>Email:</strong> info@sholors-loafers.com</li>
+        <li><strong>Address:</strong> 199 Lee Ave StE 684, Brooklyn NY 11211</li>
       </ul>
       <a
         className="contact-mail-button"
-        href="mailto:hello@shos.co.il?subject=%D7%A4%D7%A0%D7%99%D7%99%D7%94%20%D7%93%D7%A8%D7%9A%20%D7%94%D7%90%D7%AA%D7%A8&body=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%91%D7%A0%D7%95%D7%A9%D7%90%20..."
+        href="mailto:info@sholors-loafers.com?subject=%D7%A4%D7%A0%D7%99%D7%99%D7%94%20%D7%93%D7%A8%D7%9A%20%D7%94%D7%90%D7%AA%D7%A8&body=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%91%D7%A0%D7%95%D7%A9%D7%90%20..."
     >
         Send contact email
       </a>
@@ -533,9 +531,8 @@ const SiteFooter = () => (
       <h2>Contact us</h2>
       <p>We will be happy to help with any question.</p>
       <ul className="contact-list">
-        <li><strong>Phone:</strong> 03-555-1234</li>
-        <li><strong>Email:</strong> hello@shos.co.il</li>
-        <li><strong>WhatsApp:</strong> 050-123-4567</li>
+        <li><strong>Email:</strong> info@sholors-loafers.com</li>
+        <li><strong>Address:</strong> 199 Lee Ave StE 684, Brooklyn NY 11211</li>
       </ul>
     </div>
 
