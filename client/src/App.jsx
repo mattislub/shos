@@ -578,7 +578,7 @@ const ContactModal = ({ onClose }) => {
         <p>Write us a message and our store team will get back to you soon.</p>
         <ul className="contact-list">
           <li><strong>Email:</strong> info@sholors-loafers.com</li>
-          <li><strong>Address:</strong> 199 Lee Ave StE 684, Brooklyn NY 11211</li>
+          <li><strong>Address:</strong> 199 Lee Ave. STE 684, Brooklyn NY 11211</li>
         </ul>
         <form className="contact-form" onSubmit={handleSubmit}>
           <label className="contact-form-label" htmlFor="contact-message">Message to the store</label>
@@ -649,7 +649,7 @@ const SiteFooter = () => (
       <p>We will be happy to help with any question.</p>
       <ul className="contact-list">
         <li><strong>Email:</strong> info@sholors-loafers.com</li>
-        <li><strong>Address:</strong> 199 Lee Ave StE 684, Brooklyn NY 11211</li>
+        <li><strong>Address:</strong> 199 Lee Ave. STE 684, Brooklyn NY 11211</li>
       </ul>
     </div>
 
