@@ -33,7 +33,8 @@ const DEFAULT_STORE_LOCATIONS = [
   { storeName: "Shoe Palace NJ", storeAddress: "6951 US 9 Unit 8, Howell, NJ 07731" },
   { storeName: "Step In Elegance", storeAddress: "268 Cedar Bridge Ave., Lakewood, NJ 08701" },
   { storeName: "Weingarten shoes", storeAddress: "27 Orchard St #206, Monsey, NY 10952" },
-  { storeName: "Shoe Laces", storeAddress: "5303 13th Ave., Brooklyn, NY 11219" }
+  { storeName: "Shoe Laces", storeAddress: "5303 13th Ave., Brooklyn, NY 11219" },
+  { storeName: "Men's Shoes Special", storeAddress: "2 Lee Ave., Brooklyn, NY 11211" }
 ];
 
 const initializeDatabaseStructure = async () => {
