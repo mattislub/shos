@@ -22,6 +22,21 @@ const fallbackProduct = {
 
 const fallbackHomeHeroImage =
   "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=80";
+const fallbackStoreLocations = [
+  { id: 1, store_name: "Crocspot", store_address: "80 Truman Ave. Apt. 111, Spring Valley, NY 10977" },
+  { id: 2, store_name: "Designer Step", store_address: "74 Lee Ave., Brooklyn, NY 11211" },
+  { id: 3, store_name: "Frankel's Designer Shoes", store_address: "100 Route 59 Suite 11, Monsey, NY 10952" },
+  { id: 4, store_name: "Hatzlucha Shoes", store_address: "48 Bakertown Rd., Monroe, NY 10950" },
+  { id: 5, store_name: "Marvel", store_address: "218 Wallabout St., Brooklyn, NY 11205" },
+  { id: 6, store_name: "Mens Footwear", store_address: "51 Forest Rd #205, Monroe, NY 10950" },
+  { id: 7, store_name: "your shoo", store_address: "5001 18th Ave., Brooklyn, NY 11204" },
+  { id: 8, store_name: "Shoe Barn", store_address: "11 Main St., Monsey, NY 10952" },
+  { id: 9, store_name: "Shoe Gardens", store_address: "157 Lee Ave., Brooklyn, NY 11211" },
+  { id: 10, store_name: "Shoe Palace NJ", store_address: "6951 US 9 Unit 8, Howell, NJ 07731" },
+  { id: 11, store_name: "Step In Elegance", store_address: "268 Cedar Bridge Ave., Lakewood, NJ 08701" },
+  { id: 12, store_name: "Weingarten shoes", store_address: "27 Orchard St #206, Monsey, NY 10952" },
+  { id: 13, store_name: "Shoe Laces", store_address: "5303 13th Ave., Brooklyn, NY 11219" }
+];
 
 const apiUrl = (import.meta.env.VITE_API_URL || "/api").trim();
 const CART_STORAGE_KEY = "shos-cart-items";
@@ -261,6 +276,11 @@ const SEO_BY_PATH = {
     description: "Read our privacy terms and shipping policy for orders across the United States.",
     keywords: "privacy policy, shipping policy, online store terms"
   },
+  "/stores": {
+    title: "Store Locations | Sholors-Loafers",
+    description: "Find stores that carry our loafers across New York and New Jersey.",
+    keywords: "store locations, shoe stores, loafers retailers, where to buy"
+  },
   "/admin": {
     title: "Admin Product Management | Sholors-Loafers",
     description: "Manage product details, images, and homepage banner content.",
@@ -277,6 +297,12 @@ const SEO_BY_PATH = {
     title: "Admin Order Management | Sholors-Loafers",
     description: "Track and manage orders with status and customer details.",
     keywords: "admin orders, order management, ecommerce operations",
+    robots: "noindex,nofollow,noarchive,nosnippet,max-image-preview:none"
+  },
+  "/admin/locations": {
+    title: "Admin Store Locations | Sholors-Loafers",
+    description: "Manage store locations that sell your products.",
+    keywords: "admin locations, store list management",
     robots: "noindex,nofollow,noarchive,nosnippet,max-image-preview:none"
   },
   "/account": {
@@ -431,6 +457,43 @@ const fetchAdminApi = async (path, options = {}) => {
   }
 
   return response;
+};
+
+const useStoreLocations = () => {
+  const [stores, setStores] = useState(fallbackStoreLocations);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadStores = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const response = await fetch(`${apiUrl}/stores`, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error("stores load failed");
+        }
+
+        const payload = await response.json();
+        const nextStores = Array.isArray(payload?.stores) ? payload.stores : [];
+        setStores(nextStores.length > 0 ? nextStores : fallbackStoreLocations);
+      } catch (loadError) {
+        if (loadError.name !== "AbortError") {
+          setError("Could not load store locations right now.");
+          setStores(fallbackStoreLocations);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStores();
+    return () => controller.abort();
+  }, []);
+
+  return { stores, loading, error };
 };
 
 
@@ -619,6 +682,7 @@ const GlobalHeader = ({ cartItemCount = 0 }) => {
         <nav className="home-actions" aria-label="Main actions">
           <button type="button" className="home-action-button" onClick={() => setIsContactModalOpen(true)}><span className="home-action-icon">📞</span>Contact</button>
           <button type="button" className="home-action-button"><span className="home-action-icon">ℹ️</span>About</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/stores")}><span className="home-action-icon">🏬</span>Store list</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/account")}><span className="home-action-icon">👤</span>Sign in</button>
           <button type="button" className="home-action-button home-action-cart-button" onClick={() => window.location.assign("/cart")}>
             <span className="home-action-icon">🛒</span>
@@ -1368,6 +1432,7 @@ const AdminPage = () => {
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/orders")}>Order management</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/locations")}>Store locations</button>
         </div>
 
         <div className="admin-tabs" role="tablist" aria-label="Management tabs">
@@ -1595,6 +1660,7 @@ const AdminCustomersPage = () => {
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/orders")}>Order management</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/locations")}>Store locations</button>
         </div>
 
         <div className="admin-metrics-grid" aria-label="Customer metrics">
@@ -1702,6 +1768,7 @@ const AdminOrdersPage = () => {
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
           <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/orders")}>Order management</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/locations")}>Store locations</button>
         </div>
 
         {loading ? <p>Loading orders...</p> : null}
@@ -1741,6 +1808,117 @@ const AdminOrdersPage = () => {
             </table>
           </div>
         ) : null}
+      </section>
+      <SiteFooter />
+    </main>
+  );
+};
+
+const AdminStoreLocationsPage = () => {
+  const [stores, setStores] = useState([]);
+  const [storeName, setStoreName] = useState("");
+  const [storeAddress, setStoreAddress] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+
+  const loadStores = async (signal) => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await fetchAdminApi("/admin/stores", { signal });
+      if (!response.ok) {
+        throw new Error("store load failed");
+      }
+
+      const payload = await response.json();
+      setStores(Array.isArray(payload?.stores) ? payload.stores : []);
+    } catch (loadError) {
+      if (loadError.name !== "AbortError") {
+        setError("Could not load store locations.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadStores(controller.signal);
+    return () => controller.abort();
+  }, []);
+
+  const addStore = async (event) => {
+    event.preventDefault();
+    setStatus("");
+    setError("");
+
+    const trimmedName = storeName.trim();
+    const trimmedAddress = storeAddress.trim();
+    if (!trimmedName || !trimmedAddress) {
+      setStatus("Store name and address are required.");
+      return;
+    }
+
+    try {
+      const response = await fetchAdminApi("/admin/stores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          store_name: trimmedName,
+          store_address: trimmedAddress
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("create store failed");
+      }
+
+      const payload = await response.json();
+      setStores((current) => [...current, payload.store]);
+      setStoreName("");
+      setStoreAddress("");
+      setStatus("Store added successfully.");
+    } catch (_saveError) {
+      setError("Failed to add store location.");
+    }
+  };
+
+  return (
+    <main className="page">
+      <section className="card">
+        <h1>Store locations management</h1>
+        <button type="button" className="checkout-link-button" onClick={() => { clearAdminToken(); window.location.assign("/admin"); }}>Logout</button>
+        <div className="admin-links" aria-label="Admin sections">
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin")}>Product settings</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/customers")}>Customer management</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/orders")}>Order management</button>
+          <button type="button" className="home-action-button" onClick={() => window.location.assign("/admin/locations")}>Store locations</button>
+        </div>
+
+        <form onSubmit={addStore} className="order-form">
+          <input value={storeName} onChange={(event) => setStoreName(event.target.value)} placeholder="Store name" />
+          <textarea
+            className="admin-textarea"
+            value={storeAddress}
+            onChange={(event) => setStoreAddress(event.target.value)}
+            placeholder="Store address"
+          />
+          <button type="submit">Add store</button>
+        </form>
+
+        {status ? <p className="status">{status}</p> : null}
+        {error ? <p className="warning">{error}</p> : null}
+        {loading ? <p>Loading stores...</p> : null}
+
+        <div className="stores-grid">
+          {stores.map((store) => (
+            <article key={`${store.id}-${store.store_name}`} className="store-location-card">
+              <h3>{store.store_name}</h3>
+              <p>{store.store_address}</p>
+            </article>
+          ))}
+        </div>
       </section>
       <SiteFooter />
     </main>
@@ -2210,6 +2388,35 @@ const PrivacyShippingPolicyPage = () => (
   </main>
 );
 
+const StoreLocationsPage = () => {
+  const { stores, loading, error } = useStoreLocations();
+
+  return (
+    <main className="page stores-page">
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
+
+      <section className="card stores-card">
+        <p className="home-eyebrow">WHERE TO BUY</p>
+        <h2 className="product-step-main-title">Stores that sell our product</h2>
+        <p className="home-subtitle">Choose the closest store from the list below.</p>
+
+        {loading ? <p className="status">Loading stores...</p> : null}
+        {error ? <p className="warning">{error}</p> : null}
+
+        <div className="stores-grid">
+          {stores.map((store) => (
+            <article key={`${store.id}-${store.store_name}`} className="store-location-card">
+              <h3>{store.store_name}</h3>
+              <p>{store.store_address}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      <SiteFooter />
+    </main>
+  );
+};
+
 function App() {
   useEffect(() => {
     applyPageSeo(window.location.pathname);
@@ -2220,10 +2427,12 @@ function App() {
   const isAdminPage = window.location.pathname === "/admin";
   const isAdminCustomersPage = window.location.pathname === "/admin/customers";
   const isAdminOrdersPage = window.location.pathname === "/admin/orders";
+  const isAdminLocationsPage = window.location.pathname === "/admin/locations";
   const isShippingDetailsPage = window.location.pathname === "/shipping-details";
   const isPolicyPage = window.location.pathname === "/privacy-shipping-policy";
+  const isStoresPage = window.location.pathname === "/stores";
   const isAccountPage = window.location.pathname === "/account";
-  const isAdminRoute = isAdminPage || isAdminCustomersPage || isAdminOrdersPage;
+  const isAdminRoute = isAdminPage || isAdminCustomersPage || isAdminOrdersPage || isAdminLocationsPage;
 
   if (!isAdminRoute && shabbatStatus?.isClosed) {
     return <ClosedForShabbatPage shabbatStatus={shabbatStatus} loading={siteStatusLoading} />;
@@ -2240,12 +2449,20 @@ function App() {
     return <AdminAuthGate><AdminPage /></AdminAuthGate>;
   }
 
+  if (isAdminLocationsPage) {
+    return <AdminAuthGate><AdminStoreLocationsPage /></AdminAuthGate>;
+  }
+
   if (isShippingDetailsPage) {
     return <ShippingDetailsPage />;
   }
 
   if (isPolicyPage) {
     return <PrivacyShippingPolicyPage />;
+  }
+
+  if (isStoresPage) {
+    return <StoreLocationsPage />;
   }
 
   if (isAccountPage) {

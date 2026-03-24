@@ -156,6 +156,38 @@ button:focus-visible {
   padding: 20px;
 }
 
+.stores-card {
+  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
+  border: 1px solid #dbeafe;
+}
+
+.stores-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.store-location-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.store-location-card h3 {
+  margin: 0 0 8px;
+  color: #312e81;
+  font-size: 1rem;
+}
+
+.store-location-card p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.55;
+}
+
 .home-header {
   position: relative;
   overflow: hidden;
