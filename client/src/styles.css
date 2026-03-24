@@ -273,6 +273,43 @@ button:focus-visible {
   position: relative;
 }
 
+.men-launch-popup-button {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 1200;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  animation: men-launch-float 2.8s ease-in-out infinite;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.22);
+}
+
+.men-launch-popup-button span {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.men-launch-popup-button:hover {
+  animation-play-state: paused;
+}
+
+.men-hero-card {
+  text-align: center;
+}
+
+@keyframes men-launch-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+  }
+}
+
 .cart-count-badge {
   min-width: 20px;
   height: 20px;

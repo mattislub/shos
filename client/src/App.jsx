@@ -251,6 +251,12 @@ const SEO_BY_PATH = {
       "Discover water-resistant, lightweight, and odor-resistant loafers designed for all-day comfort.",
     keywords: "loafers, comfortable shoes, women loafers, lightweight shoes, non-slip shoes"
   },
+  "/men-shoe": {
+    title: "Men's Loafers | Sholors-Loafers",
+    description:
+      "Meet the men's loafer everyone has been waiting for: lightweight, water-resistant, and ready for all-day comfort.",
+    keywords: "men loafers, comfortable men's shoes, lightweight men's loafers"
+  },
   "/cart": {
     title: "Shopping Cart | Sholors-Loafers",
     description: "Review your selected loafers, adjust quantities, and continue to secure checkout.",
@@ -1102,6 +1108,155 @@ const StorePage = () => {
     </main>
   );
 };
+
+const MenShoePage = () => {
+  const { product, loading, error } = useProduct();
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [status, setStatus] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+  const [quantity, setQuantity] = useState(1);
+
+  const currentProduct = product ? normalizeProduct(product) : null;
+  const displayImage = currentProduct
+    ? currentProduct.images[selectedImageIndex] || currentProduct.image_url
+    : "";
+  const selectedImageColor = currentProduct?.image_entries[selectedImageIndex]?.color_name || "";
+
+  const menSizeRows = [
+    { size: "40" },
+    { size: "41" },
+    { size: "42" },
+    { size: "43" },
+    { size: "44" },
+    { size: "45" }
+  ];
+
+  const addCurrentSelectionToCart = () => {
+    if (!currentProduct) {
+      setStatus("Product data is still loading. Please wait a moment and try again.");
+      return;
+    }
+
+    if (!selectedSize) {
+      setStatus("Please select one size before adding to cart.");
+      return;
+    }
+
+    appendCartItem({
+      title: "Men's Loafer - The One You've Been Waiting For",
+      image: displayImage,
+      color: selectedImageColor,
+      size: selectedSize,
+      quantity,
+      price_usd: currentProduct?.price_usd || 0,
+      added_at: new Date().toISOString()
+    });
+
+    setStatus("Men's loafer added to cart successfully.");
+  };
+
+  return (
+    <main className="page men-page">
+      <GlobalHeader cartItemCount={getCartItemCount(readCartItems())} />
+
+      <section className="card men-hero-card">
+        <p className="home-eyebrow">NEW ARRIVAL</p>
+        <h1 className="product-step-main-title">The men's shoe you've been waiting for</h1>
+        <p className="home-subtitle">
+          Built for movement and comfort all day long, with the lightweight feel you already love.
+        </p>
+      </section>
+
+      <section className="card">
+        {loading ? <p>Loading product...</p> : null}
+        {error ? <p className="warning">{error}</p> : null}
+
+        {displayImage ? <img src={displayImage} alt="Men's loafer" className="product-image" /> : null}
+
+        {(currentProduct?.images || []).length > 1 ? (
+          <div className="thumb-grid">
+            {currentProduct.images.map((image, index) => (
+              <button
+                key={`men-image-${image}-${index}`}
+                type="button"
+                className={`thumb ${selectedImageIndex === index ? "thumb-active" : ""}`}
+                onClick={() => setSelectedImageIndex(index)}
+              >
+                <img src={image} alt={`Men's loafer view ${index + 1}`} />
+                {currentProduct?.image_entries[index]?.color_name ? (
+                  <span>{currentProduct.image_entries[index].color_name}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {selectedImageColor ? <p className="status">Selected color: {selectedImageColor}</p> : null}
+
+        <h2>Men's Loafer - The One You've Been Waiting For</h2>
+        <p>
+          Water-resistant, breathable, and easy to wear. Designed for daily errands, work, and weekend use.
+        </p>
+        <p className="status">Price: {formatUsdCents(currentProduct?.price_usd || 0)}</p>
+
+        <h3>Select your size</h3>
+        <div className="size-choice-pills" role="group" aria-label="Men size selection">
+          {menSizeRows.map((row) => {
+            const active = selectedSize === row.size;
+            return (
+              <button
+                key={`men-size-${row.size}`}
+                type="button"
+                className={`size-pill ${active ? "size-pill-active" : ""}`}
+                onClick={() => setSelectedSize(row.size)}
+                aria-pressed={active}
+              >
+                {row.size}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="quantity-stepper" aria-label="Quantity selection">
+          <button
+            type="button"
+            onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+            aria-label="Decrease quantity"
+          >
+            −
+          </button>
+          <span>{quantity}</span>
+          <button
+            type="button"
+            onClick={() => setQuantity((current) => current + 1)}
+            aria-label="Increase quantity"
+          >
+            +
+          </button>
+        </div>
+
+        <div className="order-form">
+          <button type="button" onClick={addCurrentSelectionToCart}>Add men's shoe to cart</button>
+        </div>
+
+        {status ? <p className="status">{status}</p> : null}
+      </section>
+      <SiteFooter />
+    </main>
+  );
+};
+
+const MenLaunchButton = () => (
+  <button
+    type="button"
+    className="men-launch-popup-button"
+    onClick={() => window.location.assign("/men-shoe")}
+    aria-label="New men's shoe available"
+  >
+    ✨ New: Men's Shoe
+    <span>The men's shoe you've been waiting for</span>
+  </button>
+);
 
 const AdminLoginPage = () => {
   const [username, setUsername] = useState(ADMIN_DEFAULT_USERNAME);
@@ -2429,6 +2584,7 @@ function App() {
   const isPolicyPage = window.location.pathname === "/privacy-shipping-policy";
   const isStoresPage = window.location.pathname === "/stores";
   const isAccountPage = window.location.pathname === "/account";
+  const isMensPage = window.location.pathname === "/men-shoe";
   const isAdminRoute = isAdminPage || isAdminCustomersPage || isAdminOrdersPage || isAdminLocationsPage;
 
   if (!isAdminRoute && shabbatStatus?.isClosed) {
@@ -2466,11 +2622,20 @@ function App() {
     return <AccountPage />;
   }
 
+  if (isMensPage) {
+    return <MenShoePage />;
+  }
+
   if (isCartPage) {
     return <CartPage />;
   }
 
-  return <StorePage />;
+  return (
+    <>
+      <MenLaunchButton />
+      <StorePage />
+    </>
+  );
 }
 
 export default App;
