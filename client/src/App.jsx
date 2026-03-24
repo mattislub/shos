@@ -1195,7 +1195,7 @@ const MenShoePage = () => {
               <button
                 key={`men-image-${image}-${index}`}
                 type="button"
-                className={`men-gallery-item ${selectedImageIndex === index ? "men-gallery-item-active" : ""}`}
+                className={`men-gallery-item men-gallery-item-${index + 1} ${selectedImageIndex === index ? "men-gallery-item-active" : ""}`}
                 onClick={() => setSelectedImageIndex(index)}
                 aria-label={`Show men shoe image ${index + 1}`}
               >

@@ -373,6 +373,14 @@ button:focus-visible {
   background: #f8fafc;
 }
 
+.men-gallery-item-1 img {
+  height: 150px;
+}
+
+.men-gallery-item-2 img {
+  height: 210px;
+}
+
 .men-gallery-item span {
   font-size: 13px;
   color: #334155;
@@ -398,6 +406,11 @@ button:focus-visible {
 @media (max-width: 640px) {
   .men-gallery {
     grid-template-columns: 1fr;
+  }
+
+  .men-gallery-item-1 img,
+  .men-gallery-item-2 img {
+    height: 170px;
   }
 }
 
