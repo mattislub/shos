@@ -1132,7 +1132,7 @@ const MenShoePage = () => {
   const displayImage = currentProduct
     ? currentProduct.images[selectedImageIndex] || currentProduct.image_url
     : "";
-  const selectedImageColor = currentProduct?.image_entries[selectedImageIndex]?.color_name || "";
+  const menGalleryImages = (currentProduct?.images || []).slice(0, 2);
 
   const menSizeRows = [
     { size: "40" },
@@ -1157,7 +1157,7 @@ const MenShoePage = () => {
     appendCartItem({
       title: "Men's Loafer - The One You've Been Waiting For",
       image: displayImage,
-      color: selectedImageColor,
+      color: "",
       size: selectedSize,
       quantity,
       price_usd: currentProduct?.price_usd || 0,
@@ -1179,31 +1179,32 @@ const MenShoePage = () => {
         </p>
       </section>
 
-      <section className="card">
+      <section className="card men-product-card">
         {loading ? <p>Loading product...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
 
-        {displayImage ? <img src={displayImage} alt="Men's loafer" className="product-image" /> : null}
+        {displayImage ? (
+          <div className="men-featured-image-wrap">
+            <img src={displayImage} alt="Men's loafer" className="product-image men-product-image" />
+          </div>
+        ) : null}
 
-        {(currentProduct?.images || []).length > 1 ? (
-          <div className="thumb-grid">
-            {currentProduct.images.map((image, index) => (
+        {menGalleryImages.length > 0 ? (
+          <div className="men-gallery" aria-label="Men shoe gallery with two images">
+            {menGalleryImages.map((image, index) => (
               <button
                 key={`men-image-${image}-${index}`}
                 type="button"
-                className={`thumb ${selectedImageIndex === index ? "thumb-active" : ""}`}
+                className={`men-gallery-item men-gallery-item-${index + 1} ${selectedImageIndex === index ? "men-gallery-item-active" : ""}`}
                 onClick={() => setSelectedImageIndex(index)}
+                aria-label={`Show men shoe image ${index + 1}`}
               >
                 <img src={image} alt={`Men's loafer view ${index + 1}`} />
-                {currentProduct?.image_entries[index]?.color_name ? (
-                  <span>{currentProduct.image_entries[index].color_name}</span>
-                ) : null}
+                <span>Image {index + 1}</span>
               </button>
             ))}
           </div>
         ) : null}
-
-        {selectedImageColor ? <p className="status">Selected color: {selectedImageColor}</p> : null}
 
         <h2>Men's Loafer - The One You've Been Waiting For</h2>
         <p>
