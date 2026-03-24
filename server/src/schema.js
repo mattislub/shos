@@ -55,9 +55,9 @@ const initializeDatabaseStructure = async () => {
   const productId = productResult.rows[0].id;
 
   await db.query(
-    `INSERT INTO store_product_images (product_id, image_url, color_name, sort_order)
-     VALUES ($1, $2, $3, 0)`,
-    [productId, DEFAULT_PRODUCT.defaultImage, "Blue"]
+    `INSERT INTO store_product_images (product_id, image_url, color_name, color_quantity, sort_order)
+     VALUES ($1, $2, $3, $4, 0)`,
+    [productId, DEFAULT_PRODUCT.defaultImage, "Blue", 0]
   );
 
   await db.query(
