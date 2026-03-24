@@ -19,6 +19,7 @@ CREATE TABLE store_product_images (
   product_id INTEGER NOT NULL REFERENCES store_products(id) ON DELETE CASCADE,
   image_url TEXT NOT NULL,
   color_name TEXT NOT NULL DEFAULT '',
+  color_quantity INTEGER NOT NULL DEFAULT 0 CHECK (color_quantity >= 0),
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -262,7 +262,8 @@ const mapProductWithImages = (row, imageRows) => {
   const images = imageRows.map((image) => image.image_url);
   const imageEntries = imageRows.map((image) => ({
     image_url: image.image_url,
-    color_name: image.color_name || ""
+    color_name: image.color_name || "",
+    color_quantity: Number(image.color_quantity || 0)
   }));
   return {
     id: row.id,
@@ -324,7 +325,7 @@ const loadActiveProduct = async () => {
   }
 
   const imagesResult = await db.query(
-    `SELECT image_url, color_name
+    `SELECT image_url, color_name, color_quantity
      FROM store_product_images
      WHERE product_id = $1
      ORDER BY sort_order, id`,
@@ -430,6 +431,19 @@ const ensureStoreLocationsTable = async () => {
       [location.storeName, location.storeAddress, index]
     );
   }
+};
+
+const ensureStoreProductImagesColorQuantityColumn = async () => {
+  await db.query(
+    `ALTER TABLE store_product_images
+     ADD COLUMN IF NOT EXISTS color_quantity INTEGER NOT NULL DEFAULT 0`
+  );
+
+  await db.query(
+    `UPDATE store_product_images
+     SET color_quantity = 0
+     WHERE color_quantity IS NULL OR color_quantity < 0`
+  );
 };
 
 const saveBase64Image = (imagePayload) => {
@@ -773,6 +787,15 @@ app.put("/api/admin/product", requireAdminAuth, async (req, res) => {
     if (hasInvalidImagePayload) {
       return res.status(400).json({ message: "each image must include image_url or upload payload" });
     }
+
+    const hasInvalidColorQuantity = images.some((image) => {
+      const parsedColorQuantity = Number(image?.color_quantity);
+      return !Number.isInteger(parsedColorQuantity) || parsedColorQuantity < 0;
+    });
+
+    if (hasInvalidColorQuantity) {
+      return res.status(400).json({ message: "each image must include color_quantity as a non-negative integer" });
+    }
   }
 
   const dbClient = await db.connect();
@@ -822,10 +845,11 @@ app.put("/api/admin/product", requireAdminAuth, async (req, res) => {
       await dbClient.query("DELETE FROM store_product_images WHERE product_id = $1", [product.id]);
       for (const [index, imageUrl] of imageUrls.entries()) {
         const imageColor = String(images[index]?.color_name || "").trim();
+        const imageColorQuantity = Number(images[index]?.color_quantity);
         await dbClient.query(
-          `INSERT INTO store_product_images (product_id, image_url, color_name, sort_order)
-           VALUES ($1, $2, $3, $4)`,
-          [product.id, imageUrl, imageColor, index]
+          `INSERT INTO store_product_images (product_id, image_url, color_name, color_quantity, sort_order)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [product.id, imageUrl, imageColor, imageColorQuantity, index]
         );
       }
     }
@@ -1070,6 +1094,7 @@ const start = async () => {
     await ensureStoreOrdersCustomerEmailColumn();
     await ensureStoreSiteContentShippingPriceColumn();
     await ensureStoreLocationsTable();
+    await ensureStoreProductImagesColorQuantityColumn();
 
     app.listen(port, () => {
       console.log(`Server listening on port ${port}`);

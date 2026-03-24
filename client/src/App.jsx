@@ -133,12 +133,13 @@ const normalizeProduct = (product) => {
   const imageEntries = rawImageEntries
     .map((entry) => {
       if (typeof entry === "string") {
-        return { image_url: toAbsoluteImageUrl(entry), color_name: "" };
+        return { image_url: toAbsoluteImageUrl(entry), color_name: "", color_quantity: 0 };
       }
 
       return {
         image_url: toAbsoluteImageUrl(entry?.image_url || ""),
-        color_name: String(entry?.color_name || "").trim()
+        color_name: String(entry?.color_name || "").trim(),
+        color_quantity: Math.max(0, Number(entry?.color_quantity) || 0)
       };
     })
     .filter((entry) => Boolean(entry.image_url));
@@ -216,6 +217,14 @@ const getCartItemCount = (items) => (Array.isArray(items)
 
 const formatUsdCents = (value) => `$${((value || 0) / 100).toFixed(2)} USD`;
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : "-");
+const toNonNegativeInteger = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor(parsed));
+};
 const formatBrooklynDateTime = (value) => (value
   ? new Intl.DateTimeFormat("en-US", {
     weekday: "long",
@@ -1329,8 +1338,11 @@ const AdminPage = () => {
   const [ctaText, setCtaText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imageColors, setImageColors] = useState({});
+  const [imageQuantities, setImageQuantities] = useState({});
   const [additionalFilesByColor, setAdditionalFilesByColor] = useState({});
+  const [additionalColorQuantities, setAdditionalColorQuantities] = useState({});
   const [removedImageKeys, setRemovedImageKeys] = useState([]);
+  const [existingImageQuantities, setExistingImageQuantities] = useState({});
   const [activeTab, setActiveTab] = useState("product");
   const [heroFile, setHeroFile] = useState(null);
   const [status, setStatus] = useState("");
@@ -1344,6 +1356,13 @@ const AdminPage = () => {
     setDescription(current.description);
     setPriceUsd(String((current.price_usd || 0) / 100));
     setCtaText(current.cta_text);
+
+    const nextQuantities = {};
+    current.image_entries.forEach((entry, index) => {
+      const key = `${entry?.image_url || ""}-${entry?.color_name || ""}-${index}`;
+      nextQuantities[key] = toNonNegativeInteger(entry?.color_quantity);
+    });
+    setExistingImageQuantities(nextQuantities);
   }, [product]);
 
   useEffect(() => {
@@ -1374,15 +1393,23 @@ const AdminPage = () => {
       });
       return next;
     });
+    setImageQuantities((current) => {
+      const next = {};
+      files.forEach((file) => {
+        const key = `${file.name}-${file.lastModified}-${file.size}`;
+        next[key] = toNonNegativeInteger(current[key]);
+      });
+      return next;
+    });
   };
 
   const fileKey = (file) => `${file.name}-${file.lastModified}-${file.size}`;
   const existingImageKey = (entry, index) => `${entry?.image_url || ""}-${entry?.color_name || ""}-${index}`;
 
   const previewProduct = normalizeProduct(product || fallbackProduct);
-  const activeImageEntries = previewProduct.image_entries.filter(
-    (entry, index) => !removedImageKeys.includes(existingImageKey(entry, index))
-  );
+  const activeImageEntries = previewProduct.image_entries
+    .map((entry, index) => ({ entry, imageKey: existingImageKey(entry, index) }))
+    .filter(({ imageKey }) => !removedImageKeys.includes(imageKey));
   const existingColors = listUniqueColors(previewProduct.image_entries);
 
   const saveProduct = async (event) => {
@@ -1402,7 +1429,11 @@ const AdminPage = () => {
       });
 
       const additionalUploads = Object.entries(additionalFilesByColor).flatMap(([colorName, files]) =>
-        (files || []).map((file) => ({ file, color_name: colorName }))
+        (files || []).map((file) => ({
+          file,
+          color_name: colorName,
+          color_quantity: toNonNegativeInteger(additionalColorQuantities[colorName])
+        }))
       );
 
       const missingColor = selectedFiles.find((file) => !String(imageColors[fileKey(file)] || "").trim());
@@ -1436,18 +1467,27 @@ const AdminPage = () => {
       const requestImages = imagesPayload.map(({ name, data }, index) => ({
         name,
         data,
-        color_name: String(imageColors[fileKey(selectedFiles[index])] || "").trim()
+        color_name: String(imageColors[fileKey(selectedFiles[index])] || "").trim(),
+        color_quantity: toNonNegativeInteger(imageQuantities[fileKey(selectedFiles[index])])
       }));
 
-      const preservedImages = activeImageEntries.map((entry) => ({
+      const preservedImages = activeImageEntries.map(({ entry, imageKey }) => ({
           image_url: entry.image_url,
-          color_name: String(entry.color_name || "").trim()
+          color_name: String(entry.color_name || "").trim(),
+          color_quantity: toNonNegativeInteger(
+            existingImageQuantities[imageKey] ?? entry.color_quantity
+          )
         }));
 
       const allImagesForRequest = [
         ...preservedImages,
         ...requestImages,
-        ...additionalImagesPayload.map(({ name, data, color_name }) => ({ name, data, color_name }))
+        ...additionalImagesPayload.map(({ name, data, color_name, color_quantity }) => ({
+          name,
+          data,
+          color_name,
+          color_quantity: toNonNegativeInteger(color_quantity)
+        }))
       ];
 
       const response = await fetchAdminApi("/admin/product", {
@@ -1494,7 +1534,9 @@ const AdminPage = () => {
       setProduct(normalizeProduct(payload.product));
       setSelectedFiles([]);
       setImageColors({});
+      setImageQuantities({});
       setAdditionalFilesByColor({});
+      setAdditionalColorQuantities({});
       setRemovedImageKeys([]);
       setStatus("Product saved successfully.");
     } catch (err) {
@@ -1661,6 +1703,18 @@ const AdminPage = () => {
                           }))}
                           placeholder="e.g. Black"
                         />
+                        Quantity for {file.name}
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={toNonNegativeInteger(imageQuantities[key])}
+                          onChange={(event) => setImageQuantities((current) => ({
+                            ...current,
+                            [key]: toNonNegativeInteger(event.target.value)
+                          }))}
+                          placeholder="0"
+                        />
                       </label>
                     );
                   })}
@@ -1685,6 +1739,18 @@ const AdminPage = () => {
                           }));
                         }}
                       />
+                      Quantity for color: {color}
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={toNonNegativeInteger(additionalColorQuantities[color])}
+                        onChange={(event) => setAdditionalColorQuantities((current) => ({
+                          ...current,
+                          [color]: toNonNegativeInteger(event.target.value)
+                        }))}
+                        placeholder="0"
+                      />
                       {additionalFilesByColor[color]?.length ? (
                         <span>{additionalFilesByColor[color].length} files selected.</span>
                       ) : null}
@@ -1705,6 +1771,19 @@ const AdminPage = () => {
                   <div key={key} className={`thumb thumb-manageable ${isRemoved ? "thumb-removed" : ""}`}>
                     <img src={entry.image_url} alt={`Product image ${index + 1}`} />
                     {entry.color_name ? <span>{entry.color_name}</span> : null}
+                    <label className="file-label">
+                      Quantity in stock
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={toNonNegativeInteger(existingImageQuantities[key] ?? entry.color_quantity)}
+                        onChange={(event) => setExistingImageQuantities((current) => ({
+                          ...current,
+                          [key]: toNonNegativeInteger(event.target.value)
+                        }))}
+                      />
+                    </label>
                     <button
                       type="button"
                       className="thumb-action"
