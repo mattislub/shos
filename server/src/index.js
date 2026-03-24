@@ -453,6 +453,9 @@ const ensureMensSpecialStoreLocation = async () => {
        WHERE store_name = $1
      )`,
     [mensSpecialLocation.storeName, mensSpecialLocation.storeAddress]
+  );
+};
+
 const ensureStoreProductImagesColorQuantityColumn = async () => {
   await db.query(
     `ALTER TABLE store_product_images
