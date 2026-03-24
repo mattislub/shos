@@ -236,6 +236,8 @@ const VISITOR_STATUS_LABELS = {
 const toVisitorStatusLabel = (value) => VISITOR_STATUS_LABELS[value] || "Unknown";
 
 const SITE_NAME = "Sholors-Loafers";
+const SITE_LOGO_URL = toAbsoluteImageUrl("/uploads/products/logo.png");
+const SITE_FAVICON_URL = toAbsoluteImageUrl("/uploads/products/logo-s.png");
 const DEFAULT_SEO_IMAGE =
   "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80";
 
@@ -672,7 +674,9 @@ const GlobalHeader = ({ cartItemCount = 0 }) => {
     <>
       <header className="home-header">
         <div className="home-title-wrap">
+          <img src={SITE_LOGO_URL} alt="Sholors-Loafers logo" className="home-logo" />
           <h1 className="home-title">Sholors-Loafers</h1>
+          <p className="home-store-name">Sholors-Loafers Store</p>
           <p className="home-eyebrow">Ultra-Comfort, Non-Slip, Foldable, Ventilated, Easy On Softers Loafers for Women</p>
         </div>
         <nav className="home-actions" aria-label="Main actions">
@@ -2572,6 +2576,18 @@ const StoreLocationsPage = () => {
 function App() {
   useEffect(() => {
     applyPageSeo(window.location.pathname);
+  }, []);
+
+  useEffect(() => {
+    let faviconLink = document.querySelector("link[rel='icon']");
+
+    if (!faviconLink) {
+      faviconLink = document.createElement("link");
+      faviconLink.rel = "icon";
+      document.head.appendChild(faviconLink);
+    }
+
+    faviconLink.href = SITE_FAVICON_URL;
   }, []);
 
   const { shabbatStatus, loading: siteStatusLoading } = useSiteAvailability();

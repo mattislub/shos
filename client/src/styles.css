@@ -216,8 +216,23 @@ button:focus-visible {
   letter-spacing: -0.02em;
 }
 
+.home-logo {
+  width: clamp(84px, 15vw, 124px);
+  height: auto;
+  margin: 0 auto 10px;
+  display: block;
+  filter: drop-shadow(0 8px 18px rgba(37, 99, 235, 0.22));
+}
+
 .home-title-wrap {
   margin-bottom: 14px;
+}
+
+.home-store-name {
+  margin: 0 0 8px;
+  color: #475569;
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
 
 .home-eyebrow {
