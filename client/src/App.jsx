@@ -192,6 +192,8 @@ const listPrimaryImageIndicesByColor = (entries) => {
   }, []).concat(fallbackIndices.length > 0 ? [fallbackIndices[0]] : []);
 };
 
+const isMenImageEntry = (entry) => String(entry?.color_name || "").trim().toLowerCase() === "men";
+
 const readCartItems = () => {
   try {
     const rawValue = window.localStorage.getItem(CART_STORAGE_KEY);
@@ -747,28 +749,30 @@ const StorePage = () => {
   const [cartItems, setCartItems] = useState(() => readCartItems());
 
   const currentProduct = product ? normalizeProduct(product) : null;
+  const womenImageEntries = (currentProduct?.image_entries || []).filter((entry) => !isMenImageEntry(entry));
+  const womenImages = womenImageEntries.map((entry) => entry.image_url);
   const displayImage = currentProduct
-    ? currentProduct.images[selectedImageIndex] || currentProduct.image_url
+    ? womenImages[selectedImageIndex] || womenImages[0] || currentProduct.image_url
     : "";
-  const selectedImageColor = currentProduct?.image_entries[selectedImageIndex]?.color_name || "";
+  const selectedImageColor = womenImageEntries[selectedImageIndex]?.color_name || "";
   const selectedImageColorKey = selectedImageColor.trim().toLowerCase();
-  const homeColorImageIndices = listPrimaryImageIndicesByColor(currentProduct?.image_entries);
-  const productStepImageIndices = (currentProduct?.images || [])
+  const homeColorImageIndices = listPrimaryImageIndicesByColor(womenImageEntries);
+  const productStepImageIndices = womenImages
     .map((_, index) => index)
     .filter((index) => {
       if (!selectedImageColorKey) {
         return true;
       }
 
-      const imageColor = String(currentProduct?.image_entries[index]?.color_name || "").trim().toLowerCase();
+      const imageColor = String(womenImageEntries[index]?.color_name || "").trim().toLowerCase();
       return imageColor === selectedImageColorKey;
     });
 
   useEffect(() => {
-    if (selectedImageIndex >= (currentProduct?.images.length || 0)) {
+    if (selectedImageIndex >= womenImages.length) {
       setSelectedImageIndex(0);
     }
-  }, [currentProduct?.images.length, selectedImageIndex]);
+  }, [womenImages.length, selectedImageIndex]);
 
   useEffect(() => {
     const syncCartItems = () => setCartItems(readCartItems());
@@ -928,7 +932,7 @@ const StorePage = () => {
             {productStepImageIndices.length > 1 ? (
               <div className="thumb-grid">
                 {productStepImageIndices.map((index) => {
-                  const image = currentProduct.images[index];
+                  const image = womenImages[index];
                   return (
                   <button
                     key={`step-image-${image}-${index}`}
@@ -937,8 +941,8 @@ const StorePage = () => {
                     onClick={() => setSelectedImageIndex(index)}
                   >
                     <img src={image} alt={`Product image ${index + 1}`} />
-                    {currentProduct?.image_entries[index]?.color_name ? (
-                      <span>{currentProduct.image_entries[index].color_name}</span>
+                    {womenImageEntries[index]?.color_name ? (
+                      <span>{womenImageEntries[index].color_name}</span>
                     ) : null}
                   </button>
                   );
@@ -1038,7 +1042,7 @@ const StorePage = () => {
             <p className="thumb-instruction">Choose the color you like and click Continue.</p>
             <div className="thumb-grid">
               {homeColorImageIndices.map((index) => {
-                const image = currentProduct.images[index];
+                const image = womenImages[index];
                 return (
                 <button
                   key={`${image}-${index}`}
@@ -1047,8 +1051,8 @@ const StorePage = () => {
                   onClick={() => setSelectedImageIndex(index)}
                 >
                   <img src={image} alt={`Image ${index + 1}`} />
-                  {currentProduct?.image_entries[index]?.color_name ? (
-                    <span>{currentProduct.image_entries[index].color_name}</span>
+                  {womenImageEntries[index]?.color_name ? (
+                    <span>{womenImageEntries[index].color_name}</span>
                   ) : null}
                 </button>
                 );
@@ -1129,10 +1133,18 @@ const MenShoePage = () => {
   const [quantity, setQuantity] = useState(1);
 
   const currentProduct = product ? normalizeProduct(product) : null;
+  const menImageEntries = (currentProduct?.image_entries || []).filter((entry) => isMenImageEntry(entry));
+  const menImages = menImageEntries.map((entry) => entry.image_url);
   const displayImage = currentProduct
-    ? currentProduct.images[selectedImageIndex] || currentProduct.image_url
+    ? menImages[selectedImageIndex] || menImages[0] || currentProduct.image_url
     : "";
-  const menGalleryImages = (currentProduct?.images || []).slice(0, 2);
+  const menGalleryImages = menImages.slice(0, 2);
+
+  useEffect(() => {
+    if (selectedImageIndex >= menImages.length) {
+      setSelectedImageIndex(0);
+    }
+  }, [menImages.length, selectedImageIndex]);
 
   const menSizeRows = [
     { size: "40" },
@@ -1416,8 +1428,9 @@ const AdminPage = () => {
   const activeImageEntries = previewProduct.image_entries
     .map((entry, index) => ({ entry, imageKey: existingImageKey(entry, index) }))
     .filter(({ imageKey }) => !removedImageKeys.includes(imageKey));
-  const currentMenImageSlotOne = activeImageEntries[0]?.entry?.image_url || "";
-  const currentMenImageSlotTwo = activeImageEntries[1]?.entry?.image_url || "";
+  const activeMenImageEntries = activeImageEntries.filter(({ entry }) => isMenImageEntry(entry));
+  const currentMenImageSlotOne = activeMenImageEntries[0]?.entry?.image_url || "";
+  const currentMenImageSlotTwo = activeMenImageEntries[1]?.entry?.image_url || "";
   const existingColors = listUniqueColors(previewProduct.image_entries);
 
   const saveProduct = async (event) => {
@@ -1492,8 +1505,8 @@ const AdminPage = () => {
         menImageFileTwo ? compressImageForUpload(menImageFileTwo) : Promise.resolve(null)
       ]);
 
-      const existingMenSlots = preservedImages.slice(0, 2);
-      const remainingPreservedImages = preservedImages.slice(2);
+      const existingMenSlots = preservedImages.filter((entry) => isMenImageEntry(entry)).slice(0, 2);
+      const remainingPreservedImages = preservedImages.filter((entry) => !isMenImageEntry(entry));
       const menSlotOneImage = menImageOneUpload
         ? {
           name: menImageOneUpload.name,
