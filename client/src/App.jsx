@@ -1132,7 +1132,7 @@ const MenShoePage = () => {
   const displayImage = currentProduct
     ? currentProduct.images[selectedImageIndex] || currentProduct.image_url
     : "";
-  const selectedImageColor = currentProduct?.image_entries[selectedImageIndex]?.color_name || "";
+  const menGalleryImages = (currentProduct?.images || []).slice(0, 2);
 
   const menSizeRows = [
     { size: "40" },
@@ -1157,7 +1157,7 @@ const MenShoePage = () => {
     appendCartItem({
       title: "Men's Loafer - The One You've Been Waiting For",
       image: displayImage,
-      color: selectedImageColor,
+      color: "",
       size: selectedSize,
       quantity,
       price_usd: currentProduct?.price_usd || 0,
@@ -1179,31 +1179,32 @@ const MenShoePage = () => {
         </p>
       </section>
 
-      <section className="card">
+      <section className="card men-product-card">
         {loading ? <p>Loading product...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
 
-        {displayImage ? <img src={displayImage} alt="Men's loafer" className="product-image" /> : null}
+        {displayImage ? (
+          <div className="men-featured-image-wrap">
+            <img src={displayImage} alt="Men's loafer" className="product-image men-product-image" />
+          </div>
+        ) : null}
 
-        {(currentProduct?.images || []).length > 1 ? (
-          <div className="thumb-grid">
-            {currentProduct.images.map((image, index) => (
+        {menGalleryImages.length > 0 ? (
+          <div className="men-gallery" aria-label="Men shoe gallery with two images">
+            {menGalleryImages.map((image, index) => (
               <button
                 key={`men-image-${image}-${index}`}
                 type="button"
-                className={`thumb ${selectedImageIndex === index ? "thumb-active" : ""}`}
+                className={`men-gallery-item men-gallery-item-${index + 1} ${selectedImageIndex === index ? "men-gallery-item-active" : ""}`}
                 onClick={() => setSelectedImageIndex(index)}
+                aria-label={`Show men shoe image ${index + 1}`}
               >
                 <img src={image} alt={`Men's loafer view ${index + 1}`} />
-                {currentProduct?.image_entries[index]?.color_name ? (
-                  <span>{currentProduct.image_entries[index].color_name}</span>
-                ) : null}
+                <span>Image {index + 1}</span>
               </button>
             ))}
           </div>
         ) : null}
-
-        {selectedImageColor ? <p className="status">Selected color: {selectedImageColor}</p> : null}
 
         <h2>Men's Loafer - The One You've Been Waiting For</h2>
         <p>
@@ -1348,6 +1349,8 @@ const AdminPage = () => {
   const [existingImageQuantities, setExistingImageQuantities] = useState({});
   const [activeTab, setActiveTab] = useState("product");
   const [heroFile, setHeroFile] = useState(null);
+  const [menImageFileOne, setMenImageFileOne] = useState(null);
+  const [menImageFileTwo, setMenImageFileTwo] = useState(null);
   const [status, setStatus] = useState("");
   const [heroStatus, setHeroStatus] = useState("");
   const [shippingPriceInput, setShippingPriceInput] = useState("0");
@@ -1413,6 +1416,8 @@ const AdminPage = () => {
   const activeImageEntries = previewProduct.image_entries
     .map((entry, index) => ({ entry, imageKey: existingImageKey(entry, index) }))
     .filter(({ imageKey }) => !removedImageKeys.includes(imageKey));
+  const currentMenImageSlotOne = activeImageEntries[0]?.entry?.image_url || "";
+  const currentMenImageSlotTwo = activeImageEntries[1]?.entry?.image_url || "";
   const existingColors = listUniqueColors(previewProduct.image_entries);
 
   const saveProduct = async (event) => {
@@ -1482,8 +1487,34 @@ const AdminPage = () => {
           )
         }));
 
+      const [menImageOneUpload, menImageTwoUpload] = await Promise.all([
+        menImageFileOne ? compressImageForUpload(menImageFileOne) : Promise.resolve(null),
+        menImageFileTwo ? compressImageForUpload(menImageFileTwo) : Promise.resolve(null)
+      ]);
+
+      const existingMenSlots = preservedImages.slice(0, 2);
+      const remainingPreservedImages = preservedImages.slice(2);
+      const menSlotOneImage = menImageOneUpload
+        ? {
+          name: menImageOneUpload.name,
+          data: menImageOneUpload.data,
+          color_name: "Men",
+          color_quantity: 0
+        }
+        : existingMenSlots[0];
+      const menSlotTwoImage = menImageTwoUpload
+        ? {
+          name: menImageTwoUpload.name,
+          data: menImageTwoUpload.data,
+          color_name: "Men",
+          color_quantity: 0
+        }
+        : existingMenSlots[1];
+      const menSlotImages = [menSlotOneImage, menSlotTwoImage].filter(Boolean);
+
       const allImagesForRequest = [
-        ...preservedImages,
+        ...menSlotImages,
+        ...remainingPreservedImages,
         ...requestImages,
         ...additionalImagesPayload.map(({ name, data, color_name, color_quantity }) => ({
           name,
@@ -1541,6 +1572,8 @@ const AdminPage = () => {
       setAdditionalFilesByColor({});
       setAdditionalColorQuantities({});
       setRemovedImageKeys([]);
+      setMenImageFileOne(null);
+      setMenImageFileTwo(null);
       setStatus("Product saved successfully.");
     } catch (err) {
       console.error("[admin] product save exception", {
@@ -1690,6 +1723,28 @@ const AdminPage = () => {
                 Upload product images (you can choose multiple files)
                 <input type="file" accept="image/*" multiple onChange={onFilesSelected} />
               </label>
+              <h3 className="admin-subtitle">Men shoe images (2 slots)</h3>
+              <label className="file-label">
+                Men image slot 1
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setMenImageFileOne(event.target.files?.[0] || null)}
+                />
+                {currentMenImageSlotOne ? <span>Current slot 1 image exists.</span> : <span>Slot 1 is currently empty.</span>}
+              </label>
+              <label className="file-label">
+                Men image slot 2
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setMenImageFileTwo(event.target.files?.[0] || null)}
+                />
+                {currentMenImageSlotTwo ? <span>Current slot 2 image exists.</span> : <span>Slot 2 is currently empty.</span>}
+              </label>
+              {(menImageFileOne || menImageFileTwo) ? (
+                <p className="status">Men shoe image updates are ready. Click Save product to apply.</p>
+              ) : null}
               {selectedFiles.length > 0 ? (
                 <>
                   <p className="status">{selectedFiles.length} files selected for upload.</p>
