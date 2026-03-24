@@ -23,6 +23,21 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 
 const DEFAULT_HOME_HERO_IMAGE =
   "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=80";
+const DEFAULT_STORE_LOCATIONS = [
+  { storeName: "Crocspot", storeAddress: "80 Truman Ave. Apt. 111, Spring Valley, NY 10977" },
+  { storeName: "Designer Step", storeAddress: "74 Lee Ave., Brooklyn, NY 11211" },
+  { storeName: "Frankel's Designer Shoes", storeAddress: "100 Route 59 Suite 11, Monsey, NY 10952" },
+  { storeName: "Hatzlucha Shoes", storeAddress: "48 Bakertown Rd., Monroe, NY 10950" },
+  { storeName: "Marvel", storeAddress: "218 Wallabout St., Brooklyn, NY 11205" },
+  { storeName: "Mens Footwear", storeAddress: "51 Forest Rd #205, Monroe, NY 10950" },
+  { storeName: "your shoo", storeAddress: "5001 18th Ave., Brooklyn, NY 11204" },
+  { storeName: "Shoe Barn", storeAddress: "11 Main St., Monsey, NY 10952" },
+  { storeName: "Shoe Gardens", storeAddress: "157 Lee Ave., Brooklyn, NY 11211" },
+  { storeName: "Shoe Palace NJ", storeAddress: "6951 US 9 Unit 8, Howell, NJ 07731" },
+  { storeName: "Step In Elegance", storeAddress: "268 Cedar Bridge Ave., Lakewood, NJ 08701" },
+  { storeName: "Weingarten shoes", storeAddress: "27 Orchard St #206, Monsey, NY 10952" },
+  { storeName: "Shoe Laces", storeAddress: "5303 13th Ave., Brooklyn, NY 11219" }
+];
 
 let productPriceColumnPromise;
 
@@ -333,6 +348,20 @@ const loadSiteContent = async () => {
   };
 };
 
+const loadStoreLocations = async () => {
+  const result = await db.query(
+    `SELECT id, store_name, store_address
+     FROM store_locations
+     ORDER BY sort_order, id`
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    store_name: row.store_name,
+    store_address: row.store_address
+  }));
+};
+
 const ensureCustomerAuthTables = async () => {
   await db.query(
     `CREATE TABLE IF NOT EXISTS customer_login_codes (
@@ -374,6 +403,33 @@ const ensureStoreSiteContentShippingPriceColumn = async () => {
      SET shipping_price_usd = 0
      WHERE shipping_price_usd IS NULL OR shipping_price_usd < 0`
   );
+};
+
+const ensureStoreLocationsTable = async () => {
+  await db.query(
+    `CREATE TABLE IF NOT EXISTS store_locations (
+      id SERIAL PRIMARY KEY,
+      store_name TEXT NOT NULL,
+      store_address TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`
+  );
+
+  const countResult = await db.query("SELECT COUNT(*)::INTEGER AS total FROM store_locations");
+  const totalRows = Number(countResult.rows[0]?.total || 0);
+  if (totalRows > 0) {
+    return;
+  }
+
+  for (const [index, location] of DEFAULT_STORE_LOCATIONS.entries()) {
+    await db.query(
+      `INSERT INTO store_locations (store_name, store_address, sort_order)
+       VALUES ($1, $2, $3)`,
+      [location.storeName, location.storeAddress, index]
+    );
+  }
 };
 
 const saveBase64Image = (imagePayload) => {
@@ -446,6 +502,52 @@ app.get("/api/product", async (_req, res) => {
   } catch (error) {
     console.error("Failed to fetch active product", error);
     return res.status(500).json({ message: "Failed to load product" });
+  }
+});
+
+app.get("/api/stores", async (_req, res) => {
+  try {
+    const stores = await loadStoreLocations();
+    return res.json({ stores });
+  } catch (error) {
+    console.error("Failed to load store locations", error);
+    return res.status(500).json({ message: "Failed to load store locations" });
+  }
+});
+
+app.get("/api/admin/stores", requireAdminAuth, async (_req, res) => {
+  try {
+    const stores = await loadStoreLocations();
+    return res.json({ stores });
+  } catch (error) {
+    console.error("Failed to load admin store locations", error);
+    return res.status(500).json({ message: "Failed to load store locations" });
+  }
+});
+
+app.post("/api/admin/stores", requireAdminAuth, async (req, res) => {
+  const storeName = String(req.body?.store_name || "").trim();
+  const storeAddress = String(req.body?.store_address || "").trim();
+
+  if (!storeName || !storeAddress) {
+    return res.status(400).json({ message: "store_name and store_address are required" });
+  }
+
+  try {
+    const nextSortOrderResult = await db.query("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_sort_order FROM store_locations");
+    const nextSortOrder = Number(nextSortOrderResult.rows[0]?.next_sort_order || 0);
+
+    const insertResult = await db.query(
+      `INSERT INTO store_locations (store_name, store_address, sort_order)
+       VALUES ($1, $2, $3)
+       RETURNING id, store_name, store_address`,
+      [storeName, storeAddress, nextSortOrder]
+    );
+
+    return res.status(201).json({ store: insertResult.rows[0] });
+  } catch (error) {
+    console.error("Failed to create store location", error);
+    return res.status(500).json({ message: "Failed to create store location" });
   }
 });
 
@@ -967,6 +1069,7 @@ const start = async () => {
     await ensureCustomerAuthTables();
     await ensureStoreOrdersCustomerEmailColumn();
     await ensureStoreSiteContentShippingPriceColumn();
+    await ensureStoreLocationsTable();
 
     app.listen(port, () => {
       console.log(`Server listening on port ${port}`);
