@@ -2397,8 +2397,8 @@ const StoreLocationsPage = () => {
 
       <section className="card stores-card">
         <p className="home-eyebrow">WHERE TO BUY</p>
-        <h2 className="product-step-main-title">חנויות שמוכרות את המוצר שלנו</h2>
-        <p className="home-subtitle">בחרו חנות קרובה אליכם מתוך הרשימה הבאה.</p>
+        <h2 className="product-step-main-title">Stores that sell our product</h2>
+        <p className="home-subtitle">Choose the closest store from the list below.</p>
 
         {loading ? <p className="status">Loading stores...</p> : null}
         {error ? <p className="warning">{error}</p> : null}

@@ -1,4 +1,4 @@
--- מוחקים את כל המבנה הקיים ובונים מחדש
+-- Drop the existing schema and recreate it from scratch
 DROP SCHEMA IF EXISTS public CASCADE;
 CREATE SCHEMA public;
 

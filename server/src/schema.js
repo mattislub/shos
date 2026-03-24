@@ -10,9 +10,9 @@ const DEFAULT_PRODUCT = {
   slug: "single-offer",
   title: "loafers",
   description:
-    "נעל יומיומית קלה ונוחה במיוחד עם סוליה בולמת זעזועים, מתאימה לעבודה, הליכה ויציאות.",
+    "A lightweight everyday shoe with shock-absorbing support, designed for work, walking, and going out.",
   priceUsd: 29900,
-  ctaText: "אני רוצה להזמין",
+  ctaText: "I want to order",
   defaultImage:
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
 };
