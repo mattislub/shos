@@ -5,23 +5,13 @@ const fallbackProduct = {
   description:
     "Water-resistant everyday loafers that are lightweight, odor-resistant, and built for all-day comfort.",
   price_usd: 29900,
-  image_url:
-    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80",
-  images: [
-    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
-  ],
-  image_entries: [
-    {
-      image_url:
-        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80",
-      color_name: "Blue"
-    }
-  ],
+  image_url: "",
+  images: [],
+  image_entries: [],
   cta_text: "Order now"
 };
 
-const fallbackHomeHeroImage =
-  "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=80";
+const fallbackHomeHeroImage = "";
 const fallbackStoreLocations = [
   { id: 1, store_name: "Crocspot", store_address: "80 Truman Ave. Apt. 111, Spring Valley, NY 10977" },
   { id: 2, store_name: "Designer Step", store_address: "74 Lee Ave., Brooklyn, NY 11211" },
