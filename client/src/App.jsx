@@ -536,7 +536,7 @@ const useSiteAvailability = () => {
 
 const useProduct = () => {
   const [product, setProduct] = useState(null);
-  const [homeHeroImageUrl, setHomeHeroImageUrl] = useState(fallbackHomeHeroImage);
+  const [homeHeroImageUrl, setHomeHeroImageUrl] = useState("");
   const [shippingPriceUsd, setShippingPriceUsd] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -738,27 +738,29 @@ const StorePage = () => {
   const [quantity, setQuantity] = useState(1);
   const [cartItems, setCartItems] = useState(() => readCartItems());
 
-  const currentProduct = normalizeProduct(product || fallbackProduct);
-  const displayImage = currentProduct.images[selectedImageIndex] || currentProduct.image_url;
-  const selectedImageColor = currentProduct.image_entries[selectedImageIndex]?.color_name || "";
+  const currentProduct = product ? normalizeProduct(product) : null;
+  const displayImage = currentProduct
+    ? currentProduct.images[selectedImageIndex] || currentProduct.image_url
+    : "";
+  const selectedImageColor = currentProduct?.image_entries[selectedImageIndex]?.color_name || "";
   const selectedImageColorKey = selectedImageColor.trim().toLowerCase();
-  const homeColorImageIndices = listPrimaryImageIndicesByColor(currentProduct.image_entries);
-  const productStepImageIndices = currentProduct.images
+  const homeColorImageIndices = listPrimaryImageIndicesByColor(currentProduct?.image_entries);
+  const productStepImageIndices = (currentProduct?.images || [])
     .map((_, index) => index)
     .filter((index) => {
       if (!selectedImageColorKey) {
         return true;
       }
 
-      const imageColor = String(currentProduct.image_entries[index]?.color_name || "").trim().toLowerCase();
+      const imageColor = String(currentProduct?.image_entries[index]?.color_name || "").trim().toLowerCase();
       return imageColor === selectedImageColorKey;
     });
 
   useEffect(() => {
-    if (selectedImageIndex >= currentProduct.images.length) {
+    if (selectedImageIndex >= (currentProduct?.images.length || 0)) {
       setSelectedImageIndex(0);
     }
-  }, [currentProduct.images.length, selectedImageIndex]);
+  }, [currentProduct?.images.length, selectedImageIndex]);
 
   useEffect(() => {
     const syncCartItems = () => setCartItems(readCartItems());
@@ -791,7 +793,7 @@ const StorePage = () => {
     { brandSize: "40", usSize: "9", euSize: "40", shoeWidth: "11.2", footLength: "10.1" }
   ];
 
-  const usdPrice = ((currentProduct.price_usd || 0) / 100).toFixed(2);
+  const usdPrice = (((currentProduct?.price_usd || 0) / 100)).toFixed(2);
 
   const selectSize = (size) => {
     setSelectedSize((current) => (current === size ? "" : size));
@@ -825,6 +827,11 @@ const StorePage = () => {
   };
 
   const addCurrentSelectionToCart = () => {
+    if (!currentProduct) {
+      setStatus("Product data is still loading. Please wait a moment and try again.");
+      return;
+    }
+
     if (!selectedSize) {
       setStatus("Please select one size before adding to cart.");
       return;
@@ -851,7 +858,7 @@ const StorePage = () => {
       images_by_color: imagesByColor,
       size: selectedSize,
       quantity,
-      price_usd: currentProduct.price_usd || 0,
+      price_usd: currentProduct?.price_usd || 0,
       added_at: new Date().toISOString()
     });
 
@@ -909,7 +916,7 @@ const StorePage = () => {
           <h1 className="product-step-main-title">Product page</h1>
 
           <section className="product-step-image-block" aria-label="Product image">
-            <img src={displayImage} alt={currentProduct.title} className="product-image" />
+            {displayImage ? <img src={displayImage} alt={currentProduct?.title || "Product image"} className="product-image" /> : null}
             {productStepImageIndices.length > 1 ? (
               <div className="thumb-grid">
                 {productStepImageIndices.map((index) => {
@@ -922,7 +929,7 @@ const StorePage = () => {
                     onClick={() => setSelectedImageIndex(index)}
                   >
                     <img src={image} alt={`Product image ${index + 1}`} />
-                    {currentProduct.image_entries[index]?.color_name ? (
+                    {currentProduct?.image_entries[index]?.color_name ? (
                       <span>{currentProduct.image_entries[index].color_name}</span>
                     ) : null}
                   </button>
@@ -932,7 +939,7 @@ const StorePage = () => {
             ) : null}
 
             {selectedImageColor ? <p className="status">Selected color: {selectedImageColor}</p> : null}
-            <h2 className="product-step-product-title">{currentProduct.title}</h2>
+            <h2 className="product-step-product-title">{currentProduct?.title || ""}</h2>
             <p className="status">Price: ${usdPrice} USD</p>
           </section>
 
@@ -1009,14 +1016,14 @@ const StorePage = () => {
       <GlobalHeader cartItemCount={getCartItemCount(cartItems)} />
 
       <section className="hero-banner">
-        <img src={homeHeroImageUrl} alt="Main banner" className="hero-banner-image" />
+        {homeHeroImageUrl ? <img src={homeHeroImageUrl} alt="Main banner" className="hero-banner-image" /> : null}
       </section>
 
       <section className="card">
         {loading ? <p>Loading product...</p> : null}
         {error ? <p className="warning">{error}</p> : null}
 
-        <img src={displayImage} alt={currentProduct.title} className="product-image" />
+        {displayImage ? <img src={displayImage} alt={currentProduct?.title || "Product image"} className="product-image" /> : null}
 
         {homeColorImageIndices.length > 1 ? (
           <>
@@ -1032,7 +1039,7 @@ const StorePage = () => {
                   onClick={() => setSelectedImageIndex(index)}
                 >
                   <img src={image} alt={`Image ${index + 1}`} />
-                  {currentProduct.image_entries[index]?.color_name ? (
+                  {currentProduct?.image_entries[index]?.color_name ? (
                     <span>{currentProduct.image_entries[index].color_name}</span>
                   ) : null}
                 </button>
@@ -1044,8 +1051,8 @@ const StorePage = () => {
 
         {selectedImageColor ? <p className="status">Selected color: {selectedImageColor}</p> : null}
 
-        <h1>{currentProduct.title}</h1>
-        <p>{currentProduct.description}</p>
+        <h1>{currentProduct?.title || ""}</h1>
+        <p>{currentProduct?.description || ""}</p>
         <p className="status">Price: ${usdPrice} USD</p>
 
         <form onSubmit={submitColorStep} className="order-form">
