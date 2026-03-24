@@ -236,10 +236,9 @@ const VISITOR_STATUS_LABELS = {
 const toVisitorStatusLabel = (value) => VISITOR_STATUS_LABELS[value] || "Unknown";
 
 const SITE_NAME = "Sholors-Loafers";
-const SITE_LOGO_URL = toAbsoluteImageUrl("/uploads/products/logo.png");
-const SITE_FAVICON_URL = toAbsoluteImageUrl("/uploads/products/logo-s.png");
+const SITE_LOGO_URL = toAbsoluteImageUrl("/uploads/logo.png");
+const SITE_FAVICON_URL = toAbsoluteImageUrl("/uploads/logo-s.png");
 const DEFAULT_SEO_IMAGE =
-  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80";
 
 const buildAbsoluteUrl = (path = "/") => {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
