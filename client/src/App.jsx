@@ -238,7 +238,7 @@ const toVisitorStatusLabel = (value) => VISITOR_STATUS_LABELS[value] || "Unknown
 const SITE_NAME = "Sholors-Loafers";
 const SITE_LOGO_URL = toAbsoluteImageUrl("/uploads/logo.png");
 const SITE_FAVICON_URL = toAbsoluteImageUrl("/uploads/logo-s.png");
-const DEFAULT_SEO_IMAGE =
+const DEFAULT_SEO_IMAGE = toAbsoluteImageUrl("/uploads/logo.png");
 
 const buildAbsoluteUrl = (path = "/") => {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
